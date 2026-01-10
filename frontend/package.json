@@ -11,13 +11,14 @@
     "postinstall": "simple-git-hooks"
   },
   "dependencies": {
-    "vue": "3.5.26",
-    "lucide-vue-next": "0.562.0"
+    "lucide-vue-next": "0.562.0",
+    "vue": "3.5.26"
   },
   "devDependencies": {
     "@eslint/js": "9.39.2",
     "@stylistic/eslint-plugin": "5.7.0",
     "@types/eslint__js": "9.14.0",
+    "@types/node": "24.3.0",
     "@vitejs/plugin-vue": "6.0.3",
     "@vue/eslint-config-typescript": "14.6.0",
     "@vue/tsconfig": "0.8.1",

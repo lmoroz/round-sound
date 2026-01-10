@@ -31,10 +31,6 @@ coverage
 
 *.tsbuildinfo
 
-
-# OpenApi-TS generated
-/backend/src/shared/api/openapi
-
 # generated
 components.d.ts
 
