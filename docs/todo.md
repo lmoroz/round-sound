@@ -10,6 +10,8 @@
 - [x] Сохранение позиции окна в %APPDATA%/round-sound/config.json
 - [x] Desktop-level окно (HWND_BOTTOM) через Windows API
 - [x] Методы управления медиа (play, pause, next, previous, shuffle, repeat, rating)
+- [x] Протокол WebNowPlaying Revision 3 для команд управления
+- [x] Обработка результатов выполнения команд (EVENT_RESULT)
 
 ### Frontend (Vue.js + TypeScript)
 - [x] CircularWidget — главный компонент

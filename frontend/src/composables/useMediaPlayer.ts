@@ -90,31 +90,94 @@ export function useMediaPlayer() {
 
   // Control methods
   const togglePlayPause = async () => {
-    if (isWailsAvailable()) await window.go.app.App.MediaTogglePlayPause()
+    console.log('[useMediaPlayer] togglePlayPause called')
+    if (isWailsAvailable()) {
+      try {
+        await window.go.app.App.MediaTogglePlayPause()
+        console.log('[useMediaPlayer] MediaTogglePlayPause success')
+      }
+      catch (err) {
+        console.error('[useMediaPlayer] MediaTogglePlayPause error:', err)
+      }
+    }
   }
 
   const next = async () => {
-    if (isWailsAvailable()) await window.go.app.App.MediaNext()
+    console.log('[useMediaPlayer] next called')
+    if (isWailsAvailable()) {
+      try {
+        await window.go.app.App.MediaNext()
+        console.log('[useMediaPlayer] MediaNext success')
+      }
+      catch (err) {
+        console.error('[useMediaPlayer] MediaNext error:', err)
+      }
+    }
   }
 
   const previous = async () => {
-    if (isWailsAvailable()) await window.go.app.App.MediaPrevious()
+    console.log('[useMediaPlayer] previous called')
+    if (isWailsAvailable()) {
+      try {
+        await window.go.app.App.MediaPrevious()
+        console.log('[useMediaPlayer] MediaPrevious success')
+      }
+      catch (err) {
+        console.error('[useMediaPlayer] MediaPrevious error:', err)
+      }
+    }
   }
 
   const toggleShuffle = async () => {
-    if (isWailsAvailable()) await window.go.app.App.MediaToggleShuffle()
+    console.log('[useMediaPlayer] toggleShuffle called')
+    if (isWailsAvailable()) {
+      try {
+        await window.go.app.App.MediaToggleShuffle()
+        console.log('[useMediaPlayer] MediaToggleShuffle success')
+      }
+      catch (err) {
+        console.error('[useMediaPlayer] MediaToggleShuffle error:', err)
+      }
+    }
   }
 
   const toggleRepeat = async () => {
-    if (isWailsAvailable()) await window.go.app.App.MediaToggleRepeat()
+    console.log('[useMediaPlayer] toggleRepeat called')
+    if (isWailsAvailable()) {
+      try {
+        await window.go.app.App.MediaToggleRepeat()
+        console.log('[useMediaPlayer] MediaToggleRepeat success')
+      }
+      catch (err) {
+        console.error('[useMediaPlayer] MediaToggleRepeat error:', err)
+      }
+    }
   }
 
   const setRating = async (rating: number) => {
-    if (isWailsAvailable()) await window.go.app.App.MediaSetRating(rating)
+    console.log('[useMediaPlayer] setRating called:', rating)
+    if (isWailsAvailable()) {
+      try {
+        await window.go.app.App.MediaSetRating(rating)
+        console.log('[useMediaPlayer] MediaSetRating success')
+      }
+      catch (err) {
+        console.error('[useMediaPlayer] MediaSetRating error:', err)
+      }
+    }
   }
 
   const seek = async (position: number) => {
-    if (isWailsAvailable()) await window.go.app.App.MediaSeek(position)
+    console.log('[useMediaPlayer] seek called:', position)
+    if (isWailsAvailable()) {
+      try {
+        await window.go.app.App.MediaSeek(position)
+        console.log('[useMediaPlayer] MediaSeek success')
+      }
+      catch (err) {
+        console.error('[useMediaPlayer] MediaSeek error:', err)
+      }
+    }
   }
 
   return {

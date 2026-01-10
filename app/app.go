@@ -87,6 +87,8 @@ func (a *App) onPlayerUpdate(player *media.Player) {
 	a.activePlayer = player
 	a.mu.Unlock()
 
+	log.Printf("[App] Player updated: ID=%d, Title=%s, State=%d", player.ID, player.Title, player.State)
+
 	// Emit event to frontend
 	if a.ctx != nil {
 		runtime.EventsEmit(a.ctx, "media:update", player)
@@ -138,26 +140,69 @@ func (a *App) GetCurrentPlayer() *media.Player {
 
 // MediaPlay sends play command to active player
 func (a *App) MediaPlay() error {
-	if a.wnpServer == nil || a.activePlayer == nil {
+	log.Println("[App] MediaPlay called")
+
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	if a.wnpServer == nil {
+		log.Println("[App] MediaPlay: wnpServer is nil")
 		return nil
 	}
-	return a.wnpServer.SendCommand(a.activePlayer.ID, "STATE", 0) // 0 = PLAYING
+	if a.activePlayer == nil {
+		log.Println("[App] MediaPlay: no active player")
+		return nil
+	}
+
+	log.Printf("[App] Sending STATE command (PLAYING) to player %d", a.activePlayer.ID)
+	err := a.wnpServer.SendCommand(a.activePlayer.ID, "STATE", 1) // 1 = PLAYING
+	if err != nil {
+		log.Printf("[App] MediaPlay error: %v", err)
+	}
+	return err
 }
 
 // MediaPause sends pause command to active player
 func (a *App) MediaPause() error {
-	if a.wnpServer == nil || a.activePlayer == nil {
+	log.Println("[App] MediaPause called")
+
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	if a.wnpServer == nil {
+		log.Println("[App] MediaPause: wnpServer is nil")
 		return nil
 	}
-	return a.wnpServer.SendCommand(a.activePlayer.ID, "STATE", 1) // 1 = PAUSED
+	if a.activePlayer == nil {
+		log.Println("[App] MediaPause: no active player")
+		return nil
+	}
+
+	log.Printf("[App] Sending STATE command (PAUSED) to player %d", a.activePlayer.ID)
+	err := a.wnpServer.SendCommand(a.activePlayer.ID, "STATE", 2) // 2 = PAUSED
+	if err != nil {
+		log.Printf("[App] MediaPause error: %v", err)
+	}
+	return err
 }
 
 // MediaTogglePlayPause toggles play/pause state
 func (a *App) MediaTogglePlayPause() error {
+	log.Println("[App] MediaTogglePlayPause called")
+
+	a.mu.RLock()
+	currentState := media.StateStopped
+	if a.activePlayer != nil {
+		currentState = a.activePlayer.State
+	}
+	a.mu.RUnlock()
+
 	if a.activePlayer == nil {
+		log.Println("[App] MediaTogglePlayPause: no active player")
 		return nil
 	}
-	if a.activePlayer.State == media.StatePlaying {
+
+	if currentState == media.StatePlaying {
 		return a.MediaPause()
 	}
 	return a.MediaPlay()
@@ -165,38 +210,97 @@ func (a *App) MediaTogglePlayPause() error {
 
 // MediaNext sends next track command
 func (a *App) MediaNext() error {
-	if a.wnpServer == nil || a.activePlayer == nil {
+	log.Println("[App] MediaNext called")
+
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	if a.wnpServer == nil {
+		log.Println("[App] MediaNext: wnpServer is nil")
 		return nil
 	}
-	return a.wnpServer.SendCommand(a.activePlayer.ID, "SKIP_NEXT", nil)
+	if a.activePlayer == nil {
+		log.Println("[App] MediaNext: no active player")
+		return nil
+	}
+
+	log.Printf("[App] Sending SKIP_NEXT command to player %d", a.activePlayer.ID)
+	err := a.wnpServer.SendCommand(a.activePlayer.ID, "SKIP_NEXT", nil)
+	if err != nil {
+		log.Printf("[App] MediaNext error: %v", err)
+	}
+	return err
 }
 
 // MediaPrevious sends previous track command
 func (a *App) MediaPrevious() error {
-	if a.wnpServer == nil || a.activePlayer == nil {
+	log.Println("[App] MediaPrevious called")
+
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	if a.wnpServer == nil {
+		log.Println("[App] MediaPrevious: wnpServer is nil")
 		return nil
 	}
-	return a.wnpServer.SendCommand(a.activePlayer.ID, "SKIP_PREVIOUS", nil)
+	if a.activePlayer == nil {
+		log.Println("[App] MediaPrevious: no active player")
+		return nil
+	}
+
+	log.Printf("[App] Sending SKIP_PREVIOUS command to player %d", a.activePlayer.ID)
+	err := a.wnpServer.SendCommand(a.activePlayer.ID, "SKIP_PREVIOUS", nil)
+	if err != nil {
+		log.Printf("[App] MediaPrevious error: %v", err)
+	}
+	return err
 }
 
 // MediaToggleShuffle toggles shuffle mode
 func (a *App) MediaToggleShuffle() error {
-	if a.wnpServer == nil || a.activePlayer == nil {
+	log.Println("[App] MediaToggleShuffle called")
+
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	if a.wnpServer == nil {
+		log.Println("[App] MediaToggleShuffle: wnpServer is nil")
 		return nil
 	}
+	if a.activePlayer == nil {
+		log.Println("[App] MediaToggleShuffle: no active player")
+		return nil
+	}
+
 	newState := !a.activePlayer.Shuffle
 	var val int
 	if newState {
 		val = 1
 	}
-	return a.wnpServer.SendCommand(a.activePlayer.ID, "SHUFFLE", val)
+	log.Printf("[App] Sending SHUFFLE command to player %d (newState=%v)", a.activePlayer.ID, newState)
+	err := a.wnpServer.SendCommand(a.activePlayer.ID, "SHUFFLE", val)
+	if err != nil {
+		log.Printf("[App] MediaToggleShuffle error: %v", err)
+	}
+	return err
 }
 
 // MediaToggleRepeat cycles through repeat modes
 func (a *App) MediaToggleRepeat() error {
-	if a.wnpServer == nil || a.activePlayer == nil {
+	log.Println("[App] MediaToggleRepeat called")
+
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	if a.wnpServer == nil {
+		log.Println("[App] MediaToggleRepeat: wnpServer is nil")
 		return nil
 	}
+	if a.activePlayer == nil {
+		log.Println("[App] MediaToggleRepeat: no active player")
+		return nil
+	}
+
 	// Cycle: NONE(1) -> ALL(2) -> ONE(4) -> NONE(1)
 	var nextMode int
 	switch a.activePlayer.Repeat {
@@ -207,21 +311,58 @@ func (a *App) MediaToggleRepeat() error {
 	default:
 		nextMode = int(media.RepeatNone)
 	}
-	return a.wnpServer.SendCommand(a.activePlayer.ID, "REPEAT", nextMode)
+	log.Printf("[App] Sending REPEAT command to player %d (nextMode=%d)", a.activePlayer.ID, nextMode)
+	err := a.wnpServer.SendCommand(a.activePlayer.ID, "REPEAT", nextMode)
+	if err != nil {
+		log.Printf("[App] MediaToggleRepeat error: %v", err)
+	}
+	return err
 }
 
 // MediaSetRating sets track rating (0=none, 1=dislike, 5=like)
 func (a *App) MediaSetRating(rating int) error {
-	if a.wnpServer == nil || a.activePlayer == nil {
+	log.Printf("[App] MediaSetRating called with rating=%d", rating)
+
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	if a.wnpServer == nil {
+		log.Println("[App] MediaSetRating: wnpServer is nil")
 		return nil
 	}
-	return a.wnpServer.SendCommand(a.activePlayer.ID, "RATING", rating)
+	if a.activePlayer == nil {
+		log.Println("[App] MediaSetRating: no active player")
+		return nil
+	}
+
+	log.Printf("[App] Sending RATING command to player %d (rating=%d)", a.activePlayer.ID, rating)
+	err := a.wnpServer.SendCommand(a.activePlayer.ID, "RATING", rating)
+	if err != nil {
+		log.Printf("[App] MediaSetRating error: %v", err)
+	}
+	return err
 }
 
 // MediaSeek seeks to position in seconds
 func (a *App) MediaSeek(position int) error {
-	if a.wnpServer == nil || a.activePlayer == nil {
+	log.Printf("[App] MediaSeek called with position=%d", position)
+
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	if a.wnpServer == nil {
+		log.Println("[App] MediaSeek: wnpServer is nil")
 		return nil
 	}
-	return a.wnpServer.SendCommand(a.activePlayer.ID, "POSITION", position)
+	if a.activePlayer == nil {
+		log.Println("[App] MediaSeek: no active player")
+		return nil
+	}
+
+	log.Printf("[App] Sending POSITION command to player %d (position=%d)", a.activePlayer.ID, position)
+	err := a.wnpServer.SendCommand(a.activePlayer.ID, "POSITION", position)
+	if err != nil {
+		log.Printf("[App] MediaSeek error: %v", err)
+	}
+	return err
 }

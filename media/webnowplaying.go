@@ -162,6 +162,13 @@ func (s *WebNowPlayingServer) handleTextMessage(msg string) {
 		return
 	}
 
+	// EVENT_RESULT has different format: 3 <eventId> <statusCode>
+	// Other messages: <msgType> <playerId> <data>
+	if MessageType(msgType) == MessageEventResult {
+		s.handleEventResult(0, parts)
+		return
+	}
+
 	playerID, err := strconv.Atoi(parts[1])
 	if err != nil {
 		log.Printf("Invalid player ID: %s", parts[1])
@@ -403,6 +410,38 @@ func (s *WebNowPlayingServer) handlePlayerRemoved(playerID int) {
 	s.notifyUpdate(activePlayer)
 }
 
+// handleEventResult handles command execution results from WebNowPlaying
+func (s *WebNowPlayingServer) handleEventResult(playerID int, parts []string) {
+	// Format: 3 <eventId> <statusCode>
+	// parts[0] = "3" (message type)
+	// parts[1] = eventId
+	// parts[2] = statusCode
+
+	if len(parts) < 3 {
+		log.Printf("Event result: incomplete message (len=%d)", len(parts))
+		return
+	}
+
+	eventID := parts[1]
+	statusCode := parts[2]
+
+	// Status codes from WebNowPlaying:
+	// 0 = Success
+	// 1 = Not Supported
+	// 2 = Timeout/Unable to execute
+	statusText := "Unknown"
+	switch statusCode {
+	case "0":
+		statusText = "Success"
+	case "1":
+		statusText = "Not Supported"
+	case "2":
+		statusText = "Timeout/Unable to execute"
+	}
+
+	log.Printf("Event result: eventId=%s, status=%s (%s)", eventID, statusText, statusCode)
+}
+
 // notifyUpdate calls the update callback with current active player
 func (s *WebNowPlayingServer) notifyUpdate(player *Player) {
 	if s.onUpdate != nil {
@@ -420,30 +459,76 @@ func (s *WebNowPlayingServer) SendCommand(playerID int, command string, data int
 		return fmt.Errorf("not connected")
 	}
 
-	// Format command based on type
-	var msg string
+	// Generate unique event ID
+	eventID := fmt.Sprintf("evt_%d", time.Now().UnixNano())
+
+	// Event types for Revision 3
+	var eventType int
+	var eventData string
+
 	switch command {
 	case "STATE":
-		msg = fmt.Sprintf("STATE %d %v", playerID, data)
+		eventType = 0 // TRY_SET_STATE
+		// data should be StateMode: 0=STOPPED, 1=PLAYING, 2=PAUSED
+		eventData = fmt.Sprintf("%v", data)
+
 	case "SKIP_NEXT":
-		msg = fmt.Sprintf("SKIP_NEXT %d", playerID)
+		eventType = 2 // TRY_SKIP_NEXT
+		eventData = ""
+
 	case "SKIP_PREVIOUS":
-		msg = fmt.Sprintf("SKIP_PREVIOUS %d", playerID)
+		eventType = 1 // TRY_SKIP_PREVIOUS
+		eventData = ""
+
 	case "SHUFFLE":
-		msg = fmt.Sprintf("SHUFFLE %d %v", playerID, data)
+		eventType = 7 // TRY_SET_SHUFFLE
+		// data should be 0 or 1
+		eventData = fmt.Sprintf("%v", data)
+
 	case "REPEAT":
-		msg = fmt.Sprintf("REPEAT %d %v", playerID, data)
+		eventType = 6 // TRY_SET_REPEAT
+		// Convert numeric repeat mode to string
+		// 1=NONE, 2=ALL, 4=ONE
+		repeatMode := data.(int)
+		switch repeatMode {
+		case 1:
+			eventData = "NONE"
+		case 2:
+			eventData = "ALL"
+		case 4:
+			eventData = "ONE"
+		default:
+			eventData = "NONE"
+		}
+
 	case "RATING":
-		msg = fmt.Sprintf("RATING %d %v", playerID, data)
+		eventType = 5 // TRY_SET_RATING
+		// data should be rating (0, 1-5)
+		eventData = fmt.Sprintf("%v", data)
+
 	case "POSITION":
-		msg = fmt.Sprintf("POSITION %d %v", playerID, data)
+		eventType = 3 // TRY_SET_POSITION
+		// data should be position in seconds
+		eventData = fmt.Sprintf("%v", data)
+
 	case "VOLUME":
-		msg = fmt.Sprintf("VOLUME %d %v", playerID, data)
+		eventType = 4 // TRY_SET_VOLUME
+		// data should be volume 0-100
+		eventData = fmt.Sprintf("%v", data)
+
 	default:
 		return fmt.Errorf("unknown command: %s", command)
 	}
 
-	log.Printf("Sending command: %s", msg)
+	// Format: <playerId> <eventId> <eventType> [data]
+	var msg string
+	if eventData != "" {
+		msg = fmt.Sprintf("%d %s %d %s", playerID, eventID, eventType, eventData)
+	} else {
+		msg = fmt.Sprintf("%d %s %d", playerID, eventID, eventType)
+	}
+
+	log.Printf("Sending command (Rev3): %s", msg)
 	return conn.WriteMessage(websocket.TextMessage, []byte(msg))
 }
 
