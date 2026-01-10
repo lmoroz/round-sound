@@ -1,3 +1,15 @@
+# Changelog
+
+## [0.1.0] 2026-01-13 15:39
+
+- Implemented WASAPI audio level capture via `IAudioMeterInformation` (media/audiolevels.go)
+- Real-time audio visualization with 64 frequency bands at 60 FPS
+- Audio gain boost (10x) for better visual representation
+- Bass boost and organic variation for frequency distribution
+- Integration with frontend via Wails Events (`audio:levels`)
+- COM thread-safe initialization in capture loop
+- Updated documentation (README.md, todo.md)
+
 ## [0.1.0] 2026-01-13 15:12
 
 - Implemented WebNowPlaying Revision 3 protocol for media controls

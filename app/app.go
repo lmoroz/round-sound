@@ -19,6 +19,7 @@ type App struct {
 	wnpServer     *media.WebNowPlayingServer
 	activePlayer  *media.Player
 	windowManager *WindowManager
+	audioCapture  *media.AudioLevelCapture
 }
 
 // NewApp creates a new App application struct
@@ -47,6 +48,12 @@ func (a *App) Startup(ctx context.Context) {
 	// Start desktop-level window manager (HWND_BOTTOM)
 	go a.windowManager.StartDesktopLevelWatcher()
 
+	// Start audio level capture
+	a.audioCapture = media.NewAudioLevelCapture(a.onAudioLevels)
+	if err := a.audioCapture.Start(); err != nil {
+		log.Printf("Failed to start audio capture: %v", err)
+	}
+
 	log.Println("Round Sound started")
 }
 
@@ -73,6 +80,11 @@ func (a *App) Shutdown(ctx context.Context) {
 	a.config.WindowY = y
 	a.config.Save()
 
+	// Stop audio capture
+	if a.audioCapture != nil {
+		a.audioCapture.Stop()
+	}
+
 	// Stop WebNowPlaying server
 	if a.wnpServer != nil {
 		a.wnpServer.Stop()
@@ -92,6 +104,13 @@ func (a *App) onPlayerUpdate(player *media.Player) {
 	// Emit event to frontend
 	if a.ctx != nil {
 		runtime.EventsEmit(a.ctx, "media:update", player)
+	}
+}
+
+// onAudioLevels is called when audio levels are captured
+func (a *App) onAudioLevels(levels []float32) {
+	if a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "audio:levels", levels)
 	}
 }
 

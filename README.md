@@ -17,6 +17,7 @@
 - **Go 1.21+**
 - **Wails v2** — десктопный фреймворк
 - **gorilla/websocket** — WebSocket для WebNowPlaying
+- **go-wca** — WASAPI для захвата audio levels
 
 ### Frontend
 - **Vue.js 3** + Composition API
@@ -39,7 +40,8 @@ round-sound/
 │   └── window_windows.go   # Windows-специфичный код (HWND_BOTTOM)
 ├── media/
 │   ├── types.go            # Типы данных Player
-│   └── webnowplaying.go    # WebSocket server для WebNowPlaying
+│   ├── webnowplaying.go    # WebSocket server для WebNowPlaying
+│   └── audiolevels.go      # WASAPI audio capture
 ├── frontend/
 │   ├── src/
 │   │   ├── main.ts
@@ -59,7 +61,8 @@ round-sound/
 │   ├── package.json
 │   └── vite.config.ts
 └── docs/
-    └── todo.md
+    ├── todo.md
+    └── WebNowPlaying-Protocol.md
 ```
 
 ## Установка и запуск
@@ -108,9 +111,20 @@ wails build
 - Периодическая проверка Z-order каждые 500ms
 
 ### Partial Updates
+
 WebNowPlaying отправляет только измененные поля. Backend хранит полное состояние в памяти и выполняет merge.
 
+### Audio Levels (WASAPI)
+
+Визуализация звука работает через Windows Core Audio API:
+
+- Захват peak levels через `IAudioMeterInformation`
+- Усиление 10x для лучшей видимости
+- Распределение по 64 частотным полосам с bass boost
+- Отправка данных во frontend ~60 FPS через Wails Events
+
 ### Обработка занятого порта
+
 Если порт 8974 занят (например, Rainmeter), выводится уведомление.
 
 ## Лицензия
