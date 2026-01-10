@@ -4,6 +4,8 @@ import {media} from '../models';
 
 export function GetCurrentPlayer():Promise<media.Player>;
 
+export function IsAutorunEnabled():Promise<boolean>;
+
 export function LoadWindowPosition():Promise<number|number>;
 
 export function MediaNext():Promise<void>;
@@ -25,3 +27,7 @@ export function MediaToggleRepeat():Promise<void>;
 export function MediaToggleShuffle():Promise<void>;
 
 export function SaveWindowPosition():Promise<void>;
+
+export function SetAutorun(arg1:boolean):Promise<void>;
+
+export function ShowWindow():Promise<void>;

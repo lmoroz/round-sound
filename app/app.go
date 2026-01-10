@@ -13,13 +13,15 @@ import (
 
 // App struct holds the application state
 type App struct {
-	ctx           context.Context
-	mu            sync.RWMutex
-	config        *Config
-	wnpServer     *media.WebNowPlayingServer
-	activePlayer  *media.Player
-	windowManager *WindowManager
-	audioCapture  *media.AudioLevelCapture
+	ctx            context.Context
+	mu             sync.RWMutex
+	config         *Config
+	wnpServer      *media.WebNowPlayingServer
+	activePlayer   *media.Player
+	windowManager  *WindowManager
+	audioCapture   *media.AudioLevelCapture
+	trayManager    *TrayManager
+	autorunManager *AutorunManager
 }
 
 // NewApp creates a new App application struct
@@ -37,8 +39,18 @@ func (a *App) Startup(ctx context.Context) {
 	// Initialize window manager
 	a.windowManager = NewWindowManager(ctx)
 
-	// Start WebNowPlaying server
+	// Initialize and setup system tray
+	a.trayManager = NewTrayManager(ctx)
+	a.trayManager.Setup()
+
+	// Initialize autorun manager
 	var err error
+	a.autorunManager, err = NewAutorunManager()
+	if err != nil {
+		log.Printf("Failed to initialize autorun manager: %v", err)
+	}
+
+	// Start WebNowPlaying server
 	a.wnpServer, err = media.NewWebNowPlayingServer(8974, a.onPlayerUpdate)
 	if err != nil {
 		log.Printf("Failed to start WebNowPlaying server: %v", err)
@@ -50,9 +62,12 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Start audio level capture
 	a.audioCapture = media.NewAudioLevelCapture(a.onAudioLevels)
-	if err := a.audioCapture.Start(); err != nil {
+	if err = a.audioCapture.Start(); err != nil {
 		log.Printf("Failed to start audio capture: %v", err)
 	}
+
+	// Listen for audio configuration changes from frontend
+	runtime.EventsOn(ctx, "audio:config", a.onAudioConfigUpdate)
 
 	log.Println("Round Sound started")
 }
@@ -111,6 +126,27 @@ func (a *App) onPlayerUpdate(player *media.Player) {
 func (a *App) onAudioLevels(levels []float32) {
 	if a.ctx != nil {
 		runtime.EventsEmit(a.ctx, "audio:levels", levels)
+	}
+}
+
+// onAudioConfigUpdate is called when frontend sends audio configuration changes
+func (a *App) onAudioConfigUpdate(data ...interface{}) {
+	if len(data) == 0 {
+		return
+	}
+
+	config, ok := data[0].(map[string]interface{})
+	if !ok {
+		log.Printf("[App] Invalid audio config format")
+		return
+	}
+
+	fftSize, _ := config["fftSize"].(float64)
+	freqMin, _ := config["freqMin"].(float64)
+	freqMax, _ := config["freqMax"].(float64)
+
+	if a.audioCapture != nil {
+		a.audioCapture.UpdateConfig(int(fftSize), freqMin, freqMax)
 	}
 }
 
@@ -384,4 +420,38 @@ func (a *App) MediaSeek(position int) error {
 		log.Printf("[App] MediaSeek error: %v", err)
 	}
 	return err
+}
+
+// --- Autorun Methods ---
+
+// IsAutorunEnabled checks if autorun is enabled
+func (a *App) IsAutorunEnabled() bool {
+	if a.autorunManager == nil {
+		return false
+	}
+	enabled, err := a.autorunManager.IsEnabled()
+	if err != nil {
+		log.Printf("[App] IsAutorunEnabled error: %v", err)
+		return false
+	}
+	return enabled
+}
+
+// SetAutorun enables or disables autorun
+func (a *App) SetAutorun(enabled bool) error {
+	if a.autorunManager == nil {
+		return nil
+	}
+
+	if enabled {
+		return a.autorunManager.Enable()
+	}
+	return a.autorunManager.Disable()
+}
+
+// ShowWindow shows the window from tray
+func (a *App) ShowWindow() {
+	if a.trayManager != nil {
+		a.trayManager.ShowWindow()
+	}
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   computed,
+  onMounted,
   ref,
 } from 'vue'
 import {
@@ -9,11 +10,13 @@ import {
 } from 'lucide-vue-next'
 import { useSettings } from '@/composables/useSettings'
 import { FFT_SIZE_OPTIONS } from '@/types/settings'
+import { IsAutorunEnabled, SetAutorun } from '../../wailsjs/go/app/App'
 
 const { audioSettings, colorScheme, updateAudioSettings, updatePrimaryColor, resetToDefaults } = useSettings()
 
 const isOpen = ref(false)
 const primaryColorInput = ref(colorScheme.value.primary)
+const autorunEnabled = ref(false)
 
 const fftSizeLabel = computed(() => {
   const size = audioSettings.value.fftSize
@@ -23,12 +26,31 @@ const fftSizeLabel = computed(() => {
   return 'Очень точно (медленнее)'
 })
 
+onMounted(async () => {
+  try {
+    autorunEnabled.value = await IsAutorunEnabled()
+  }
+  catch (error) {
+    console.error('[Settings] Failed to check autorun status:', error)
+  }
+})
+
 function toggleModal() {
   isOpen.value = !isOpen.value
 }
 
 function handlePrimaryColorChange() {
   updatePrimaryColor(primaryColorInput.value)
+}
+
+async function handleAutorunToggle() {
+  try {
+    await SetAutorun(autorunEnabled.value)
+  }
+  catch (error) {
+    console.error('[Settings] Failed to set autorun:', error)
+    autorunEnabled.value = !autorunEnabled.value
+  }
 }
 
 function handleReset() {
@@ -171,6 +193,22 @@ function handleReset() {
                 >
                   <span>Accent</span>
                 </div>
+              </div>
+            </section>
+
+            <!-- System Settings -->
+            <section class="settings-section">
+              <h3>Система</h3>
+
+              <div class="setting-item">
+                <label class="checkbox-label">
+                  <input
+                    v-model="autorunEnabled"
+                    type="checkbox"
+                    @change="handleAutorunToggle"
+                  >
+                  <span>Запускать при старте Windows</span>
+                </label>
               </div>
             </section>
           </div>
@@ -423,6 +461,63 @@ function handleReset() {
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Checkbox */
+.checkbox-label {
+  display: flex!important;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+  appearance: none;
+  width: 48px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 13px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.checkbox-label input[type="checkbox"]::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.checkbox-label input[type="checkbox"]:checked::before {
+  left: 24px;
+}
+
+.checkbox-label input[type="checkbox"]:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.checkbox-label input[type="checkbox"]:checked:hover {
+  background: var(--color-secondary);
+}
+
+.checkbox-label span {
+  font-size: 14px;
+  color: var(--color-text);
 }
 
 .modal-footer {

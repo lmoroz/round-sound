@@ -6,6 +6,10 @@ export function GetCurrentPlayer() {
   return window['go']['app']['App']['GetCurrentPlayer']();
 }
 
+export function IsAutorunEnabled() {
+  return window['go']['app']['App']['IsAutorunEnabled']();
+}
+
 export function LoadWindowPosition() {
   return window['go']['app']['App']['LoadWindowPosition']();
 }
@@ -48,4 +52,12 @@ export function MediaToggleShuffle() {
 
 export function SaveWindowPosition() {
   return window['go']['app']['App']['SaveWindowPosition']();
+}
+
+export function SetAutorun(arg1) {
+  return window['go']['app']['App']['SetAutorun'](arg1);
+}
+
+export function ShowWindow() {
+  return window['go']['app']['App']['ShowWindow']();
 }

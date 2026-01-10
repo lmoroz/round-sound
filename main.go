@@ -25,16 +25,16 @@ func main() {
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:             "Round Sound",
-		Width:             400,
-		Height:            400,
-		MinWidth:          400,
-		MinHeight:         400,
-		MaxWidth:          400,
-		MaxHeight:         400,
+		Width:             600,
+		Height:            600,
+		MinWidth:          600,
+		MinHeight:         600,
+		MaxWidth:          600,
+		MaxHeight:         600,
 		DisableResize:     true,
 		Frameless:         true,
 		StartHidden:       false,
-		HideWindowOnClose: false,
+		HideWindowOnClose: true,
 		BackgroundColour:  &options.RGBA{R: 0, G: 0, B: 0, A: 0},
 		AssetServer: &assetserver.Options{
 			Assets: assets,
@@ -42,7 +42,7 @@ func main() {
 		Windows: &windows.Options{
 			WebviewIsTransparent:              true,
 			WindowIsTranslucent:               true,
-			DisableWindowIcon:                 true,
+			DisableWindowIcon:                 false,
 			DisableFramelessWindowDecorations: true,
 			WebviewUserDataPath:               "",
 			ZoomFactor:                        1.0,

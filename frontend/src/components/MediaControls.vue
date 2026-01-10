@@ -62,22 +62,22 @@ function handleDislike() {
     >
       <button
         class="control-button small"
-        :class="{ active: isDisliked }"
-        title="Dislike"
-        @click="handleDislike"
-      >
-        <ThumbsDown :size="16" />
-      </button>
-      <button
-        class="control-button small"
         :class="{ 'active-heart': isLiked }"
         title="Like"
         @click="handleLike"
       >
         <Heart
           :fill="isLiked ? 'currentColor' : 'none'"
-          :size="16"
+          :size="24"
         />
+      </button>
+      <button
+        class="control-button small"
+        :class="{ active: isDisliked }"
+        title="Dislike"
+        @click="handleDislike"
+      >
+        <ThumbsDown :size="16" />
       </button>
     </div>
 
@@ -144,6 +144,9 @@ function handleDislike() {
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  width: calc(100% + 50px);
+  background: var(--color-background);
+  padding: 12px 0;
 }
 
 .rating-row {
@@ -166,15 +169,14 @@ function handleDislike() {
   height: 36px;
   border: none;
   border-radius: 50%;
-  background: var(--color-button);
-  color: var(--color-text);
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
+  background: transparent;
+  color: var(--color-text-secondary);
+  transition: color 0.2s ease,  transform 0.2s ease;
 }
 
 .control-button:hover {
-  background: var(--color-button-hover);
-  transform: scale(1.1);
+  color: var(--color-text);
+  transform: scale(1.2);
 }
 
 .control-button:active {
@@ -211,7 +213,8 @@ function handleDislike() {
 }
 
 .control-button.active-heart {
-  color: #ff4081;
-  background: rgba(255, 64, 129, 0.2);
+  color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 15px var(--color-primary-glow);
 }
 </style>

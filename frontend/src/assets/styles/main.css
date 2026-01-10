@@ -1,14 +1,14 @@
 :root {
   --widget-size: 350px;
-  --cover-size: 280px;
+  --cover-size: 290px;
   --progress-ring-size: 310px;
-  --rays-size: 380px;
+  --rays-size: 580px;
 
   --color-primary: #ff8c42;
   --color-primary-glow: rgba(255, 140, 66, 0.6);
   --color-secondary: #ff6b35;
   --color-accent: #ffaa66;
-  --color-background: rgba(20, 20, 30, 0.85);
+  --color-background: rgba(20, 20, 30, 0.55);
   --color-text: #ffffff;
   --color-text-secondary: rgba(255, 255, 255, 0.7);
   --color-button: rgba(255, 255, 255, 0.15);
@@ -96,10 +96,10 @@ button {
 }
 
 .settings-wrapper {
-    opacity: 0;
-    transition: opacity 0.5s;
+  opacity: 0;
+  transition: opacity 0.5s;
 }
 
 body:hover .settings-wrapper {
-    opacity: 1;
+  opacity: 1;
 }

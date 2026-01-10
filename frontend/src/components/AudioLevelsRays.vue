@@ -19,9 +19,9 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 let animationId: number | null = null
 let currentLevels: number[] = []
 
-const size = 380
+const size = 580
 const innerRadius = 160
-const maxRayLength = 90
+const maxRayLength = 130
 const rayCount = 64
 
 // Smoothing factor for level transitions

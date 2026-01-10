@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.3.0] 2026-01-13 18:34
+
+- **Window resize**: Increased application window from 400x400px to 600x600px
+- **Audio visualization expansion**: Canvas size increased to 580px to fully display rays without clipping
+- **System tray integration**: App now hides to system tray instead of closing (HideWindowOnClose)
+- **Autorun functionality**: Added Windows registry-based autorun manager (app/autorun.go)
+- **Settings UI enhancement**: Added "System" section with autorun toggle in SettingsPanel
+- **Application icon**: Enabled window icon display
+- **Go backend extensions**: Added TrayManager and AutorunManager with public API methods
+- **UI adjustments**: Slightly increased cover size to 290px and reduced background opacity to 0.55
+- Updated documentation (README.md, todo.md) with new features
+
+## [0.2.0] 2026-01-13 17:XX
+
+- **Implemented FFT-based audio analysis** replacing peak-distribution visualization
+- Switched from `IAudioMeterInformation` to WASAPI loopback capture (`IAudioCaptureClient`) for raw audio samples
+- Integrated `github.com/mjibson/go-dsp/fft` for real-time FFT processing
+- Added Hann window function to reduce spectral leakage
+- Implemented logarithmic frequency binning (20Hz - 20kHz) into 64 bands
+- Dynamic FFT configuration: adjustable FFT size (1024/2048/4096/8192) and frequency range
+- Frontend audio config event handling (`audio:config`) for real-time settings updates
+- New module `media/fft.go` for FFT processing logic
+- Complete rewrite of `media/audiolevels.go` for loopback capture and FFT integration
+- Updated documentation (README.md, todo.md) to reflect FFT implementation
+
 ## [0.1.0] 2026-01-13 17:12
 
 - Implemented settings system with localStorage persistence
