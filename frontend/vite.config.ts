@@ -4,6 +4,7 @@ import {
   defineConfig,
 } from 'vite';
 import checker from 'vite-plugin-checker';
+import eslint from 'vite-plugin-eslint';
 
 const PATH_SRC = './src';
 const PATH_ASSETS = 'assets';
@@ -26,6 +27,7 @@ export default defineConfig({
   },
   plugins: [
     vue(),
+    eslint(),
     checker({
       vueTsc: true,
     }),
@@ -36,6 +38,7 @@ export default defineConfig({
       '~': path.resolve(__dirname, PATH_SRC),
       '~assets': path.resolve(__dirname, PATH_ASSETS),
     },
+    preserveSymlinks: true,
   },
   server: {
     port: parseInt(process.env.APPLICATION_PORT || '5000'),
