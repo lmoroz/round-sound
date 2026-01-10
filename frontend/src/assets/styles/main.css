@@ -4,10 +4,10 @@
   --progress-ring-size: 310px;
   --rays-size: 380px;
 
-  --color-primary: #00d4aa;
-  --color-primary-glow: rgba(0, 212, 170, 0.6);
-  --color-secondary: #00b8d4;
-  --color-accent: #00e5ff;
+  --color-primary: #ff8c42;
+  --color-primary-glow: rgba(255, 140, 66, 0.6);
+  --color-secondary: #ff6b35;
+  --color-accent: #ffaa66;
   --color-background: rgba(20, 20, 30, 0.85);
   --color-text: #ffffff;
   --color-text-secondary: rgba(255, 255, 255, 0.7);
@@ -93,4 +93,13 @@ button {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.settings-wrapper {
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+body:hover .settings-wrapper {
+    opacity: 1;
 }

@@ -2,17 +2,32 @@ import {
   onMounted,
   onUnmounted,
   ref,
+  watch,
 } from 'vue'
+import { EventsEmit } from '../../wailsjs/runtime/runtime'
+import { useSettings } from './useSettings'
 
 // Check if Wails runtime is available
 const isWailsAvailable = () => typeof window !== 'undefined' && 'runtime' in window
 
 export function useAudioLevels(bandCount = 64) {
+  const { audioSettings } = useSettings()
   const levels = ref<number[]>(new Array(bandCount).fill(0))
   const isActive = ref(false)
 
   let unsubscribe: (() => void) | null = null
   let animationId: number | null = null
+
+  // Send audio settings to backend when changed
+  function updateBackendSettings() {
+    if (!isWailsAvailable()) return
+
+    EventsEmit('audio:config', {
+      fftSize: audioSettings.value.fftSize,
+      freqMin: audioSettings.value.freqMin,
+      freqMax: audioSettings.value.freqMax,
+    })
+  }
 
   onMounted(() => {
     if (!isWailsAvailable()) {
@@ -37,12 +52,20 @@ export function useAudioLevels(bandCount = 64) {
         isActive.value = true
       }
     })
+
+    // Send initial settings
+    updateBackendSettings()
   })
 
   onUnmounted(() => {
     if (unsubscribe) unsubscribe()
     if (animationId) cancelAnimationFrame(animationId)
   })
+
+  // Watch for settings changes and update backend
+  watch(audioSettings, () => {
+    updateBackendSettings()
+  }, { deep: true })
 
   return {
     levels,

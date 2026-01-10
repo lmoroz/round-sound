@@ -5,11 +5,15 @@ import {
   ref,
   watch,
 } from 'vue'
+import { useSettings } from '@/composables/useSettings'
+import { generateRayGradient } from '@/utils/colors'
 
 const props = defineProps<{
   levels: number[];
   isPlaying: boolean;
 }>()
+
+const { colorScheme } = useSettings()
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 let animationId: number | null = null
@@ -17,7 +21,7 @@ let currentLevels: number[] = []
 
 const size = 380
 const innerRadius = 160
-const maxRayLength = 30
+const maxRayLength = 90
 const rayCount = 64
 
 // Smoothing factor for level transitions
@@ -63,25 +67,15 @@ function draw() {
     const endX = centerX + Math.cos(angle) * (innerRadius + rayLength)
     const endY = centerY + Math.sin(angle) * (innerRadius + rayLength)
 
-    // Create gradient for each ray
-    const gradient = ctx.createLinearGradient(startX, startY, endX, endY)
-
-    if (props.isPlaying) {
-      gradient.addColorStop(0, 'rgba(0, 212, 170, 0.8)')
-      gradient.addColorStop(0.5, 'rgba(0, 229, 255, 0.6)')
-      gradient.addColorStop(1, 'rgba(0, 184, 212, 0.2)')
-    }
-    else {
-      gradient.addColorStop(0, 'rgba(100, 100, 100, 0.3)')
-      gradient.addColorStop(1, 'rgba(100, 100, 100, 0.1)')
-    }
+    // Create gradient using color scheme from settings
+    const gradient = generateRayGradient(ctx, startX, startY, endX, endY, colorScheme.value, props.isPlaying)
 
     // Draw ray
     ctx.beginPath()
     ctx.moveTo(startX, startY)
     ctx.lineTo(endX, endY)
     ctx.strokeStyle = gradient
-    ctx.lineWidth = 2
+    ctx.lineWidth = 6
     ctx.lineCap = 'round'
     ctx.stroke()
   }

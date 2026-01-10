@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.1.0] 2026-01-13 17:12
+
+- Implemented settings system with localStorage persistence
+- Added SettingsPanel component with modal UI
+- Created dynamic color scheme generator from single primary color
+- Added FFT size configuration (1024/2048/4096/8192)
+- Added frequency range settings (min/max Hz)
+- Integrated color utilities (HEX/RGB/HSL conversion)
+- Connected settings to backend via Wails Events
+- Updated AudioLevelsRays to use dynamic colors from settings
+- All settings auto-save and restore between app restarts
+
+## [0.1.0] 2026-01-13 15:54
+
+- Changed color scheme from teal-cyan to orange tones
+- Updated primary colors: #ff8c42, #ff6b35, #ffaa66
+- Updated audio visualization rays gradient to match orange theme
+- Increased ray length from 30px to 90px (3x) for better visibility
+- Increased ray thickness from 2px to 6px (3x) for enhanced visual presence
+
 ## [0.1.0] 2026-01-13 15:39
 
 - Implemented WASAPI audio level capture via `IAudioMeterInformation` (media/audiolevels.go)
