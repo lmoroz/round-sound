@@ -13,6 +13,7 @@ type WindowManager struct {
 	mu        sync.Mutex
 	isRunning bool
 	stopCh    chan struct{}
+	Hwnd      uintptr // Window handle (Windows only)
 }
 
 // NewWindowManager creates a new WindowManager

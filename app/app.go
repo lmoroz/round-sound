@@ -80,8 +80,14 @@ func (a *App) DomReady(ctx context.Context) {
 		log.Printf("Restored window position: %d, %d", a.config.WindowX, a.config.WindowY)
 	}
 
-	// Set window to desktop level
+	// Set window tode desktop level
 	a.windowManager.SetDesktopLevel()
+
+	// Hide from taskbar (will only show in system tray)
+	if a.windowManager.Hwnd != 0 {
+		setToolWindow(a.windowManager.Hwnd)
+		log.Println("Window hidden from taskbar")
+	}
 
 	// Start periodic position saver (every 5 seconds)
 	go a.startPositionSaver()
@@ -98,6 +104,11 @@ func (a *App) Shutdown(ctx context.Context) {
 	// Stop audio capture
 	if a.audioCapture != nil {
 		a.audioCapture.Stop()
+	}
+
+	// Remove tray icon
+	if a.trayManager != nil {
+		a.trayManager.Remove()
 	}
 
 	// Stop WebNowPlaying server

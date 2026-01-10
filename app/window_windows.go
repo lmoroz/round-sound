@@ -75,6 +75,11 @@ func (w *WindowManager) setDesktopLevelImpl() {
 		return
 	}
 
+	// Save hwnd for later use
+	if w.Hwnd == 0 {
+		w.Hwnd = hwnd
+	}
+
 	// Set window position to bottom of Z-order
 	ret, _, err := procSetWindowPos.Call(
 		hwnd,

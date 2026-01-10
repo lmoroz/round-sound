@@ -1,14 +1,16 @@
 # Changelog
 
-## [0.3.0] 2026-01-13 18:34
+## [0.3.0] 2026-01-13 19:15
 
 - **Window resize**: Increased application window from 400x400px to 600x600px
 - **Audio visualization expansion**: Canvas size increased to 580px to fully display rays without clipping
-- **System tray integration**: App now hides to system tray instead of closing (HideWindowOnClose)
+- **System tray integration**: Using getlantern/systray with Register() for non-blocking tray icon
+- **Taskbar hiding**: Window hidden from taskbar using WS_EX_TOOLWINDOW style
+- **Tray menu**: Added "Выход" menu item for application exit
 - **Autorun functionality**: Added Windows registry-based autorun manager (app/autorun.go)
 - **Settings UI enhancement**: Added "System" section with autorun toggle in SettingsPanel
-- **Application icon**: Enabled window icon display
-- **Go backend extensions**: Added TrayManager and AutorunManager with public API methods
+- **Application icon**: Custom icon embedded via go:embed (tray.ico)
+- **Go backend extensions**: Added TrayManager with systray.Register() integration
 - **UI adjustments**: Slightly increased cover size to 290px and reduced background opacity to 0.55
 - Updated documentation (README.md, todo.md) with new features
 
