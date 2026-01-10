@@ -1,0 +1,62 @@
+{
+  "extends": ["@vue/tsconfig/tsconfig.dom.json"],
+  "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": ".",
+    "target": "ESNext",
+    "module": "ESNext",
+    "types": ["node", "vite/client", "vitest/importMeta"],
+    "useDefineForClassFields": true,
+    "lib": ["ES2023", "ES2020", "ES2021", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": false,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "allowJs": true,
+    "jsx": "preserve",
+    "strict": true,
+    "noImplicitAny": false,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "~/*": ["./src/*"],
+      "@/*": ["./src/*"],
+      "~tests/*": ["./tests/*"],
+      "~assets/*": ["./assets/*"],
+      "~pages/*": ["./src/mvc/view/pages/*"],
+      "~shared/*": ["./src/_shared/*"],
+      "~components/*": ["./src/mvc/view/components/*"],
+      "@ui/*": ["./src/mvc/view/ui/*"]
+    },
+    "plugins": [{ "name": "@vue/typescript-plugin" }]
+  },
+  "include": [
+    "vite.config.ts",
+    ".storybook/*.ts",
+    "src/.d.ts",
+    "./*.vue",
+    "src/**/*.stories.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "tests/**/*.ts"
+  ],
+  "exclude": [
+    "dist",
+    "assets",
+    "public",
+    "scripts",
+    "lib",
+    "node_modules",
+    "dist",
+    ".vite",
+    ".output"
+  ]
+}
