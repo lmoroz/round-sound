@@ -430,6 +430,42 @@ func (a *App) MediaSeek(position int) error {
 	return err
 }
 
+// MediaSetVolume sets the volume (0-100)
+func (a *App) MediaSetVolume(volume int) error {
+	// Clamp volume between 0 and 100
+	if volume < 0 {
+		volume = 0
+	} else if volume > 100 {
+		volume = 100
+	}
+
+	log.Printf("[App] MediaSetVolume called with volume=%d", volume)
+
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	if a.wnpServer == nil {
+		log.Println("[App] MediaSetVolume: wnpServer is nil")
+		return nil
+	}
+	if a.activePlayer == nil {
+		log.Println("[App] MediaSetVolume: no active player")
+		return nil
+	}
+
+	if !a.activePlayer.CanSetVolume {
+		log.Println("[App] MediaSetVolume: player does not support setting volume")
+		return nil
+	}
+
+	log.Printf("[App] Sending VOLUME command to player %d (volume=%d)", a.activePlayer.ID, volume)
+	err := a.wnpServer.SendCommand(a.activePlayer.ID, "VOLUME", volume)
+	if err != nil {
+		log.Printf("[App] MediaSetVolume error: %v", err)
+	}
+	return err
+}
+
 // --- Autorun Methods ---
 
 // IsAutorunEnabled checks if autorun is enabled

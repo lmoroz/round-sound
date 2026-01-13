@@ -26,6 +26,7 @@ declare global {
           MediaToggleRepeat: () => Promise<void>;
           MediaSetRating: (rating: number) => Promise<void>;
           MediaSeek: (position: number) => Promise<void>;
+          MediaSetVolume: (volume: number) => Promise<void>;
         };
       };
     };
@@ -181,6 +182,22 @@ export function useMediaPlayer() {
     }
   }
 
+  const setVolume = async (volume: number) => {
+    console.log('[useMediaPlayer] setVolume called:', volume)
+    // Optimistic update
+    player.value.volume = volume
+
+    if (isWailsAvailable()) {
+      try {
+        await window.go.app.App.MediaSetVolume(volume)
+        console.log('[useMediaPlayer] MediaSetVolume success')
+      }
+      catch (err) {
+        console.error('[useMediaPlayer] MediaSetVolume error:', err)
+      }
+    }
+  }
+
   return {
     player,
     isConnected,
@@ -192,5 +209,6 @@ export function useMediaPlayer() {
     toggleRepeat,
     setRating,
     seek,
+    setVolume,
   }
 }

@@ -50,6 +50,10 @@ export function MediaSetRating(arg1) {
   return window['go']['app']['App']['MediaSetRating'](arg1);
 }
 
+export function MediaSetVolume(arg1) {
+  return window['go']['app']['App']['MediaSetVolume'](arg1);
+}
+
 export function MediaTogglePlayPause() {
   return window['go']['app']['App']['MediaTogglePlayPause']();
 }

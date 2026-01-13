@@ -1,8 +1,10 @@
 # Round Sound Widget
 
 A circular music widget for Windows with real-time audio level visualization.  
-  
-![screenshot.png](media/screenshot.png)  
+
+
+![screenshot.png](media/screenshot.png)  ![screenshot2.png](media/screenshot2.png)  
+
 
 ## Features
 

@@ -153,12 +153,16 @@ function handleDislike() {
   display: flex;
   gap: 15px;
   margin-bottom: 5px;
+  position: relative;
+  z-index: 100;
 }
 
 .main-controls {
   display: flex;
   align-items: center;
   gap: 8px;
+  position: relative;
+  z-index: 100;
 }
 
 .control-button {

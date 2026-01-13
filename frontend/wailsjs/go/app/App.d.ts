@@ -26,6 +26,8 @@ export function MediaSeek(arg1:number):Promise<void>;
 
 export function MediaSetRating(arg1:number):Promise<void>;
 
+export function MediaSetVolume(arg1:number):Promise<void>;
+
 export function MediaTogglePlayPause():Promise<void>;
 
 export function MediaToggleRepeat():Promise<void>;

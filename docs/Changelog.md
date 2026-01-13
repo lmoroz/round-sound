@@ -1,8 +1,18 @@
 # Changelog
 
+## [0.3.3] 2026-01-14 03:05
+
+### Added
+
+- **Volume Control**: Scroll over widget to adjust volume
+- Floating volume overlay with percentage and icon feedback
+- Dedicated volume indicator on hover at the bottom of the widget
+- WNP Volume command support in backend (`MediaSetVolume`)
+
 ## [0.3.2] 2026-01-14 02:10
 
 ### Added
+
 - **Custom Adapter Support**: Configurable WebNowPlaying port for parallel operation with Rainmeter
 - Port configuration in Settings → WebNowPlaying section
 - Graceful handling of busy default port (8974) — opens settings with instructions
@@ -12,6 +22,7 @@
 - `ChangeWNPPort`, `GetWNPPort`, `IsWNPConnected` Go bindings
 
 ### Changed
+
 - WNP port now saved in config.json and persists across restarts
 - App no longer crashes when default port is occupied by Rainmeter
 
