@@ -3,7 +3,7 @@
 A circular music widget for Windows with real-time audio level visualization.  
 
 
-![screenshot.png](media/screenshot.png)  ![screenshot2.png](media/screenshot2.png)  
+<img src="media/screenshot.png" width=400/>   <img src="media/screenshot2.png" width=400/>  
 
 
 ## Features

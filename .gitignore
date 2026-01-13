@@ -35,7 +35,7 @@ coverage
 components.d.ts
 
 patch
-/backend/package-lock.json
+/bin/build/
 
 **/_trash/
 .env
