@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.1] 2026-01-14 01:50
+
+- **Interactive progress bar thumb**: Added draggable thumb button that appears on hover
+- Circular thumb follows progress arc with glow effects and inner highlight
+- Drag-to-seek functionality for track position control
+- Click-on-track to seek to specific position
+- ViewBox padding to prevent thumb clipping at edges
+- Added `--wails-draggable: no-drag` to prevent window dragging during seek
+- Touch support for touchscreen devices
+- Fixed nil pointer dereference when last player is removed
+- Rounded seek position to integer before sending to backend
+
 ## [0.3.0] 2026-01-13 19:15
 
 - **Window resize**: Increased application window from 400x400px to 600x600px

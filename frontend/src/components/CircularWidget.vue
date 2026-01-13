@@ -20,6 +20,7 @@ const {
   toggleShuffle,
   toggleRepeat,
   setRating,
+  seek,
 } = useMediaPlayer()
 
 const { levels } = useAudioLevels(64)
@@ -41,7 +42,11 @@ const isPlaying = computed(() => player.value.state === StateMode.Playing)
     />
 
     <!-- Progress ring -->
-    <ProgressRing :progress="progress" />
+    <ProgressRing
+      :duration="player.duration"
+      :progress="progress"
+      @seek="seek"
+    />
 
     <!-- Main circular content -->
     <div class="widget-main">

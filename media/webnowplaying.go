@@ -444,7 +444,7 @@ func (s *WebNowPlayingServer) handleEventResult(playerID int, parts []string) {
 
 // notifyUpdate calls the update callback with current active player
 func (s *WebNowPlayingServer) notifyUpdate(player *Player) {
-	if s.onUpdate != nil {
+	if s.onUpdate != nil && player != nil {
 		s.onUpdate(player.Clone())
 	}
 }

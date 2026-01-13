@@ -168,10 +168,11 @@ export function useMediaPlayer() {
   }
 
   const seek = async (position: number) => {
-    console.log('[useMediaPlayer] seek called:', position)
+    const positionInt = Math.round(position)
+    console.log('[useMediaPlayer] seek called:', position, '-> rounded to:', positionInt)
     if (isWailsAvailable()) {
       try {
-        await window.go.app.App.MediaSeek(position)
+        await window.go.app.App.MediaSeek(positionInt)
         console.log('[useMediaPlayer] MediaSeek success')
       }
       catch (err) {

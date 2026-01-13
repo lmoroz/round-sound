@@ -9,7 +9,7 @@ A circular music widget for Windows with real-time audio level visualization.
 - 🎵 Track information display (title, artist, album cover)
 - 🎮 Media controls (play/pause, next, previous, shuffle, repeat, like/dislike)
 - 📊 Audio level visualization with "rays" around the widget (real-time FFT analysis)
-- 🖼️ Circular progress bar
+- 🖼️ Circular progress bar with interactive thumb (drag-to-seek)
 - 🪟 Transparent frameless window at desktop level
 - 💾 Window position persistence between restarts
 - 🎨 Customizable color scheme
