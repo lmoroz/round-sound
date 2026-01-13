@@ -1,50 +1,52 @@
 # Round Sound Widget
 
-Круглый музыкальный виджет для Windows с визуализацией audio levels.
+A circular music widget for Windows with real-time audio level visualization.  
+  
+![screenshot.png](media/screenshot.png)  
 
-## Особенности
+## Features
 
-- 🎵 Отображение информации о треке (название, артист, обложка)
-- 🎮 Кнопки управления (play/pause, next, previous, shuffle, repeat, like/dislike)
-- 📊 Визуализация audio levels "лучами" вокруг виджета (FFT-анализ в реальном времени)
-- 🖼️ Круговой прогресс-бар
-- 🪟 Прозрачное frameless окно на уровне desktop
-- 💾 Запоминание позиции окна между перезапусками
-- 🎨 Настраиваемая цветовая схема
-- ⚙️ Настройки с динамическими параметрами FFT
-- 🔔 Интеграция с system tray (скрытие в трей вместо закрытия)
-- 🚀 Автозапуск при старте Windows
+- 🎵 Track information display (title, artist, album cover)
+- 🎮 Media controls (play/pause, next, previous, shuffle, repeat, like/dislike)
+- 📊 Audio level visualization with "rays" around the widget (real-time FFT analysis)
+- 🖼️ Circular progress bar
+- 🪟 Transparent frameless window at desktop level
+- 💾 Window position persistence between restarts
+- 🎨 Customizable color scheme
+- ⚙️ Settings with dynamic FFT parameters
+- 🔔 System tray integration (minimize to tray instead of closing)
+- 🚀 Auto-start on Windows startup
 
-## Технологии
+## Technologies
 
 ### Backend
 - **Go 1.21+**
-- **Wails v2** — десктопный фреймворк
-- **gorilla/websocket** — WebSocket для WebNowPlaying
-- **go-wca** — WASAPI для захвата audio levels
+- **Wails v2** — desktop application framework
+- **gorilla/websocket** — WebSocket for WebNowPlaying
+- **go-wca** — WASAPI for audio level capture
 
 ### Frontend
 - **Vue.js 3** + Composition API
 - **TypeScript**
 - **Vite 7**
 - **Lucide Icons**
-- **Canvas** для audio levels
+- **Canvas** for audio levels
 
-## Структура проекта
+## Project Structure
 
 ```
 round-sound/
-├── main.go                 # Entry point Wails
-├── wails.json              # Конфигурация Wails
-├── go.mod                  # Go модуль
+├── main.go                 # Wails entry point
+├── wails.json              # Wails configuration
+├── go.mod                  # Go module
 ├── app/
-│   ├── app.go              # Основная логика приложения
-│   ├── config.go           # Управление конфигурацией
-│   ├── window.go           # Window manager (общий)
-│   └── window_windows.go   # Windows-специфичный код (HWND_BOTTOM)
+│   ├── app.go              # Main application logic
+│   ├── config.go           # Configuration management
+│   ├── window.go           # Window manager (cross-platform)
+│   └── window_windows.go   # Windows-specific code (HWND_BOTTOM)
 ├── media/
-│   ├── types.go            # Типы данных Player
-│   ├── webnowplaying.go    # WebSocket server для WebNowPlaying
+│   ├── types.go            # Player data types
+│   ├── webnowplaying.go    # WebSocket server for WebNowPlaying
 │   └── audiolevels.go      # WASAPI audio capture
 ├── frontend/
 │   ├── src/
@@ -69,70 +71,70 @@ round-sound/
     └── WebNowPlaying-Protocol.md
 ```
 
-## Установка и запуск
+## Installation & Usage
 
-### Требования
+### Requirements
 - Go 1.21+
 - Node.js 20+
 - Wails CLI (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`)
 
-### Разработка
+### Development
 ```bash
-# Установить зависимости
+# Install dependencies
 cd frontend && npm install && cd ..
 go mod tidy
 
-# Запустить в dev режиме
+# Run in dev mode
 wails dev
 ```
 
-### Сборка
+### Build
 ```bash
 wails build
 ```
 
-## Интеграция с WebNowPlaying
+## WebNowPlaying Integration
 
-Виджет работает с браузерным плагином [WebNowPlaying](https://wnp.keifufu.dev/):
-1. Установите плагин в Chrome/Firefox
-2. Запустите Round Sound
-3. Откройте YouTube Music, Spotify Web или другой поддерживаемый сервис
+The widget works with the [WebNowPlaying](https://wnp.keifufu.dev/) browser plugin:
+1. Install the plugin in Chrome/Firefox
+2. Launch Round Sound
+3. Open YouTube Music, Spotify Web, or any other supported service
 
-### Поддерживаемые источники
+### Supported Sources
 - YouTube Music
 - Spotify Web
 - SoundCloud
 - Deezer
 - Tidal
 - Apple Music
-- И другие...
+- And more...
 
-## Особенности реализации
+## Implementation Details
 
-### Desktop-level окно
-Виджет отображается на уровне рабочего стола (ниже всех окон) с помощью:
-- Windows API `SetWindowPos` с `HWND_BOTTOM`
-- Периодическая проверка Z-order каждые 500ms
+### Desktop-Level Window
+The widget is displayed at the desktop level (below all windows) using:
+- Windows API `SetWindowPos` with `HWND_BOTTOM`
+- Periodic Z-order check every 500ms
 
 ### Partial Updates
 
-WebNowPlaying отправляет только измененные поля. Backend хранит полное состояние в памяти и выполняет merge.
+WebNowPlaying sends only changed fields. The backend maintains full state in memory and performs merge operations.
 
 ### Audio Levels (WASAPI)
 
-Визуализация звука работает через Windows Core Audio API:
+Sound visualization works through the Windows Core Audio API:
 
-- Захват аудио-потока через WASAPI loopback (`IAudioCaptureClient`)
-- Real-time FFT-анализ с использованием `github.com/mjibson/go-dsp/fft`
-- Применение Hann window для уменьшения spectral leakage
-- Группировка FFT bins в 64 частотные полосы (20Hz - 20kHz) с логарифмической шкалой
-- Динамическая настройка FFT size (1024/2048/4096/8192) и частотного диапазона
-- Отправка данных во frontend ~60 FPS через Wails Events
+- Audio stream capture via WASAPI loopback (`IAudioCaptureClient`)
+- Real-time FFT analysis using `github.com/mjibson/go-dsp/fft`
+- Hann window application to reduce spectral leakage
+- Grouping FFT bins into 64 frequency bands (20Hz - 20kHz) with logarithmic scale
+- Dynamic FFT size configuration (1024/2048/4096/8192) and frequency range
+- Data transmission to frontend at ~60 FPS via Wails Events
 
-### Обработка занятого порта
+### Busy Port Handling
 
-Если порт 8974 занят (например, Rainmeter), выводится уведомление.
+If port 8974 is busy (e.g., by Rainmeter), a notification is displayed.
 
-## Лицензия
+## License
 
 MIT
