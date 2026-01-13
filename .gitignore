@@ -36,6 +36,7 @@ components.d.ts
 
 patch
 /bin/build/
+/build/bin/
 
 **/_trash/
 .env
