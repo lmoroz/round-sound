@@ -29,6 +29,10 @@ function loadSettings(): AppSettings {
           ...DEFAULT_SETTINGS.colors,
           ...parsed.colors,
         },
+        wnp: {
+          ...DEFAULT_SETTINGS.wnp,
+          ...parsed.wnp,
+        },
       }
     }
   }
@@ -75,6 +79,7 @@ applyCSSVariables()
 export function useSettings() {
   const audioSettings = computed(() => settings.value.audio)
   const colorScheme = computed(() => settings.value.colors)
+  const wnpSettings = computed(() => settings.value.wnp)
 
   function updateAudioSettings(partial: Partial<typeof DEFAULT_SETTINGS.audio>) {
     settings.value.audio = {
@@ -95,6 +100,13 @@ export function useSettings() {
     }
   }
 
+  function updateWNPSettings(partial: Partial<typeof DEFAULT_SETTINGS.wnp>) {
+    settings.value.wnp = {
+      ...settings.value.wnp,
+      ...partial,
+    }
+  }
+
   function resetToDefaults() {
     settings.value = JSON.parse(JSON.stringify(DEFAULT_SETTINGS))
   }
@@ -102,9 +114,11 @@ export function useSettings() {
   return {
     audioSettings,
     colorScheme,
+    wnpSettings,
     updateAudioSettings,
     updatePrimaryColor,
     updateColorScheme,
+    updateWNPSettings,
     resetToDefaults,
   }
 }

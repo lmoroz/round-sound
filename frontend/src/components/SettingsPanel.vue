@@ -1,22 +1,38 @@
 <script setup lang="ts">
 import {
   computed,
+  nextTick,
   onMounted,
+  onUnmounted,
   ref,
 } from 'vue'
 import {
+  AlertTriangle,
+  ExternalLink,
   Settings,
   X,
 } from 'lucide-vue-next'
 import { useSettings } from '@/composables/useSettings'
 import { FFT_SIZE_OPTIONS } from '@/types/settings'
-import { IsAutorunEnabled, SetAutorun } from '../../wailsjs/go/app/App'
+import {
+  ChangeWNPPort,
+  GetWNPPort,
+  IsAutorunEnabled,
+  IsWNPConnected,
+  SetAutorun,
+} from '../../wailsjs/go/app/App'
+import { EventsOff, EventsOn } from '../../wailsjs/runtime/runtime'
 
-const { audioSettings, colorScheme, updateAudioSettings, updatePrimaryColor, resetToDefaults } = useSettings()
+const { audioSettings, colorScheme, wnpSettings, updateAudioSettings, updatePrimaryColor, updateWNPSettings, resetToDefaults } = useSettings()
 
 const isOpen = ref(false)
 const primaryColorInput = ref(colorScheme.value.primary)
 const autorunEnabled = ref(false)
+const wnpPortInput = ref(wnpSettings.value.port)
+const wnpConnected = ref(false)
+const wnpPortError = ref('')
+const showCustomAdapterHint = ref(false)
+const wnpSectionRef = ref<HTMLElement | null>(null)
 
 const fftSizeLabel = computed(() => {
   const size = audioSettings.value.fftSize
@@ -29,10 +45,49 @@ const fftSizeLabel = computed(() => {
 onMounted(async () => {
   try {
     autorunEnabled.value = await IsAutorunEnabled()
+    wnpConnected.value = await IsWNPConnected()
+    wnpPortInput.value = await GetWNPPort()
   }
   catch (error) {
-    console.error('[Settings] Failed to check autorun status:', error)
+    console.error('[Settings] Failed to load initial state:', error)
   }
+
+  // Listen for WNP port busy event — auto-open settings
+  EventsOn('wnp:port_busy', (data: { port: number; message: string }) => {
+    console.log('[Settings] WNP port busy:', data)
+    showCustomAdapterHint.value = true
+    wnpPortError.value = data.message
+    wnpConnected.value = false
+    isOpen.value = true
+
+    // Scroll to WNP section after modal opens
+    nextTick(() => {
+      setTimeout(() => {
+        wnpSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 300)
+    })
+  })
+
+  EventsOn('wnp:port_changed', (port: number) => {
+    console.log('[Settings] WNP port changed:', port)
+    wnpPortInput.value = port
+    wnpConnected.value = true
+    wnpPortError.value = ''
+    showCustomAdapterHint.value = false
+    updateWNPSettings({ port, showCustomAdapterHint: false })
+  })
+
+  EventsOn('wnp:port_error', (data: { port: number; message: string }) => {
+    console.log('[Settings] WNP port error:', data)
+    wnpPortError.value = data.message
+    wnpConnected.value = false
+  })
+})
+
+onUnmounted(() => {
+  EventsOff('wnp:port_busy')
+  EventsOff('wnp:port_changed')
+  EventsOff('wnp:port_error')
 })
 
 function toggleModal() {
@@ -53,11 +108,36 @@ async function handleAutorunToggle() {
   }
 }
 
+async function handleWNPPortChange() {
+  const port = wnpPortInput.value
+  if (port < 1024 || port > 65535) {
+    wnpPortError.value = 'Порт должен быть от 1024 до 65535'
+    return
+  }
+
+  wnpPortError.value = ''
+
+  try {
+    await ChangeWNPPort(port)
+    updateWNPSettings({ port })
+  }
+  catch (error) {
+    console.error('[Settings] Failed to change WNP port:', error)
+    wnpPortError.value = 'Не удалось сменить порт'
+  }
+}
+
 function handleReset() {
   if (confirm('Сбросить все настройки к значениям по умолчанию?')) {
     resetToDefaults()
     primaryColorInput.value = colorScheme.value.primary
+    wnpPortInput.value = wnpSettings.value.port
   }
+}
+
+function dismissCustomAdapterHint() {
+  showCustomAdapterHint.value = false
+  updateWNPSettings({ showCustomAdapterHint: false })
 }
 </script>
 
@@ -193,6 +273,107 @@ function handleReset() {
                 >
                   <span>Accent</span>
                 </div>
+              </div>
+            </section>
+
+            <!-- WebNowPlaying Settings -->
+            <section
+              ref="wnpSectionRef"
+              class="settings-section"
+            >
+              <h3>WebNowPlaying</h3>
+
+              <!-- Custom Adapter Hint (показывается при конфликте портов) -->
+              <div
+                v-if="showCustomAdapterHint"
+                class="alert-box warning"
+              >
+                <div class="alert-header">
+                  <AlertTriangle :size="18" />
+                  <span>Порт занят</span>
+                  <button
+                    class="alert-close"
+                    @click="dismissCustomAdapterHint"
+                  >
+                    <X :size="16" />
+                  </button>
+                </div>
+                <p>
+                  Стандартный порт 8974 занят (скорее всего, Rainmeter WebNowPlaying.dll).
+                </p>
+                <p>
+                  <strong>Решение:</strong> Укажите другой порт (например, 9000) и добавьте его как
+                  <strong>Custom Adapter</strong> в настройках расширения WebNowPlaying в браузере.
+                </p>
+                <a
+                  class="hint-link"
+                  href="https://wnp.keifufu.dev"
+                  target="_blank"
+                >
+                  <ExternalLink :size="14" />
+                  Документация WebNowPlaying
+                </a>
+              </div>
+
+              <div class="setting-item">
+                <label for="wnp-port">
+                  Порт подключения
+                  <span class="setting-hint">
+                    Round Sound слушает подключения от расширения WebNowPlaying на этом порту
+                  </span>
+                </label>
+                <div class="port-input-wrapper">
+                  <input
+                    id="wnp-port"
+                    v-model.number="wnpPortInput"
+                    max="65535"
+                    min="1024"
+                    type="number"
+                    @keydown.enter="handleWNPPortChange"
+                  >
+                  <button
+                    class="port-apply-button"
+                    @click="handleWNPPortChange"
+                  >
+                    Применить
+                  </button>
+                </div>
+                <div
+                  v-if="wnpPortError"
+                  class="setting-error"
+                >
+                  {{ wnpPortError }}
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <div class="status-row">
+                  <span class="status-label">Статус:</span>
+                  <span
+                    class="status-badge"
+                    :class="{ connected: wnpConnected, disconnected: !wnpConnected }"
+                  >
+                    {{ wnpConnected ? 'Сервер запущен' : 'Сервер не запущен' }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="info-box">
+                <p>
+                  <strong>Как подключить:</strong>
+                </p>
+                <ol>
+                  <li>
+                    Установите расширение <a
+                      href="https://chrome.google.com/webstore/detail/webnowplaying/jfakgfcdgpghbbefmdfjkbdlibjgnbli"
+                      target="_blank"
+                    >WebNowPlaying</a> в браузере
+                  </li>
+                  <li>Откройте настройки расширения</li>
+                  <li>Нажмите "Add custom adapter"</li>
+                  <li>Укажите порт: <strong>{{ wnpPortInput }}</strong></li>
+                  <li>Включите адаптер</li>
+                </ol>
               </div>
             </section>
 
@@ -596,5 +777,177 @@ function handleReset() {
 
 .modal-content::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Alert Box */
+.alert-box {
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.alert-box.warning {
+  background: rgba(255, 180, 50, 0.15);
+  border: 1px solid rgba(255, 180, 50, 0.4);
+}
+
+.alert-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: #ffb432;
+  font-weight: 600;
+}
+
+.alert-close {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alert-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.alert-box p {
+  margin: 8px 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.hint-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-accent);
+  font-size: 13px;
+  text-decoration: none;
+  margin-top: 8px;
+}
+
+.hint-link:hover {
+  text-decoration: underline;
+}
+
+/* Port Input */
+.port-input-wrapper {
+  display: flex;
+  gap: 10px;
+}
+
+.port-input-wrapper input {
+  flex: 1;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--color-text);
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.port-input-wrapper input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-primary);
+}
+
+.port-apply-button {
+  padding: 10px 18px;
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.port-apply-button:hover {
+  background: var(--color-secondary);
+  border-color: var(--color-secondary);
+}
+
+/* Setting Error */
+.setting-error {
+  color: #ff6464;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* Status Row */
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-label {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge.connected {
+  background: rgba(80, 200, 120, 0.2);
+  color: #50c878;
+}
+
+.status-badge.disconnected {
+  background: rgba(255, 100, 100, 0.2);
+  color: #ff6464;
+}
+
+/* Info Box */
+.info-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.info-box p {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.info-box ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.info-box li {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.info-box a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.info-box a:hover {
+  text-decoration: underline;
 }
 </style>

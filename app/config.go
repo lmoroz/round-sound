@@ -7,10 +7,14 @@ import (
 	"path/filepath"
 )
 
+// DefaultWNPPort is the default WebNowPlaying port (same as Rainmeter adapter)
+const DefaultWNPPort = 8974
+
 // Config holds application configuration
 type Config struct {
 	WindowX int `json:"windowX"`
 	WindowY int `json:"windowY"`
+	WNPPort int `json:"wnpPort"`
 }
 
 // getConfigPath returns the path to config file
@@ -26,7 +30,9 @@ func getConfigPath() string {
 
 // LoadConfig loads configuration from file
 func LoadConfig() *Config {
-	cfg := &Config{}
+	cfg := &Config{
+		WNPPort: DefaultWNPPort, // Default port
+	}
 	configPath := getConfigPath()
 
 	data, err := os.ReadFile(configPath)
@@ -40,7 +46,12 @@ func LoadConfig() *Config {
 		return &Config{}
 	}
 
-	log.Printf("Loaded config: WindowX=%d, WindowY=%d", cfg.WindowX, cfg.WindowY)
+	// Ensure WNPPort has a valid default
+	if cfg.WNPPort == 0 {
+		cfg.WNPPort = DefaultWNPPort
+	}
+
+	log.Printf("Loaded config: WindowX=%d, WindowY=%d, WNPPort=%d", cfg.WindowX, cfg.WindowY, cfg.WNPPort)
 	return cfg
 }
 
@@ -57,6 +68,6 @@ func (c *Config) Save() error {
 		return err
 	}
 
-	log.Printf("Saved config: WindowX=%d, WindowY=%d", c.WindowX, c.WindowY)
+	log.Printf("Saved config: WindowX=%d, WindowY=%d, WNPPort=%d", c.WindowX, c.WindowY, c.WNPPort)
 	return nil
 }

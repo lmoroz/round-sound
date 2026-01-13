@@ -11,9 +11,15 @@ export interface ColorScheme {
   accent: string;
 }
 
+export interface WNPSettings {
+  port: number;
+  showCustomAdapterHint: boolean;
+}
+
 export interface AppSettings {
   audio: AudioSettings;
   colors: ColorScheme;
+  wnp: WNPSettings;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -27,6 +33,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
     primaryGlow: 'rgba(255, 140, 66, 0.6)',
     secondary: '#ff6b35',
     accent: '#ffaa66',
+  },
+  wnp: {
+    port: 8974,
+    showCustomAdapterHint: false,
   },
 }
 

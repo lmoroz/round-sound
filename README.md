@@ -98,7 +98,20 @@ wails build
 The widget works with the [WebNowPlaying](https://wnp.keifufu.dev/) browser plugin:
 1. Install the plugin in Chrome/Firefox
 2. Launch Round Sound
-3. Open YouTube Music, Spotify Web, or any other supported service
+3. Open the extension settings
+4. Click "Add custom adapter" and enter the port from Round Sound settings (default: 8974)
+5. Enable the adapter
+6. Play music on YouTube Music, Spotify Web, or any other supported service
+
+### Custom Adapter (Rainmeter Compatibility)
+
+If you also use Rainmeter with WebNowPlaying.dll, the default port 8974 will be busy.  
+Round Sound automatically detects this and offers to use a different port:
+
+1. When port conflict is detected, settings open automatically
+2. Change the port (e.g., to 9000)
+3. Add this port as a Custom Adapter in the browser extension
+4. Both Round Sound and Rainmeter will work simultaneously
 
 ### Supported Sources
 - YouTube Music
@@ -131,9 +144,13 @@ Sound visualization works through the Windows Core Audio API:
 - Dynamic FFT size configuration (1024/2048/4096/8192) and frequency range
 - Data transmission to frontend at ~60 FPS via Wails Events
 
-### Busy Port Handling
+### Port Conflict Resolution
 
-If port 8974 is busy (e.g., by Rainmeter), a notification is displayed.
+If the default port 8974 is busy (e.g., by Rainmeter WebNowPlaying.dll):
+1. The settings panel opens automatically
+2. Auto-scrolls to the WebNowPlaying section
+3. User can set a custom port (e.g., 9000)
+4. Instructions for adding Custom Adapter are displayed
 
 ## License
 

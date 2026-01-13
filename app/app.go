@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -50,12 +51,8 @@ func (a *App) Startup(ctx context.Context) {
 		log.Printf("Failed to initialize autorun manager: %v", err)
 	}
 
-	// Start WebNowPlaying server
-	a.wnpServer, err = media.NewWebNowPlayingServer(8974, a.onPlayerUpdate)
-	if err != nil {
-		log.Printf("Failed to start WebNowPlaying server: %v", err)
-		runtime.EventsEmit(ctx, "error:port_busy", "Порт 8974 занят другим приложением (возможно, Rainmeter WebNowPlaying). Закройте другое приложение и перезапустите Round Sound.")
-	}
+	// Start WebNowPlaying server on configured port
+	a.startWNPServer(a.config.WNPPort)
 
 	// Start desktop-level window manager (HWND_BOTTOM)
 	go a.windowManager.StartDesktopLevelWatcher()
@@ -465,4 +462,82 @@ func (a *App) ShowWindow() {
 	if a.trayManager != nil {
 		a.trayManager.ShowWindow()
 	}
+}
+
+// --- WebNowPlaying Port Management ---
+
+// startWNPServer starts the WNP server on the specified port
+func (a *App) startWNPServer(port int) {
+	var err error
+	a.wnpServer, err = media.NewWebNowPlayingServer(port, a.onPlayerUpdate)
+	if err != nil {
+		log.Printf("Failed to start WebNowPlaying server on port %d: %v", port, err)
+
+		// Emit event to open settings with port configuration hint
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "wnp:port_busy", map[string]interface{}{
+				"port":    port,
+				"message": "Порт занят другим приложением (возможно, Rainmeter WebNowPlaying).",
+			})
+		}
+	} else {
+		log.Printf("WebNowPlaying server started on port %d", port)
+	}
+}
+
+// GetWNPPort returns the current WNP port from config
+func (a *App) GetWNPPort() int {
+	if a.config != nil {
+		return a.config.WNPPort
+	}
+	return DefaultWNPPort
+}
+
+// IsWNPConnected returns true if WNP server is running
+func (a *App) IsWNPConnected() bool {
+	return a.wnpServer != nil
+}
+
+// ChangeWNPPort changes the WNP port and restarts the server
+func (a *App) ChangeWNPPort(port int) error {
+	if port < 1024 || port > 65535 {
+		return fmt.Errorf("invalid port: must be between 1024 and 65535")
+	}
+
+	log.Printf("Changing WNP port from %d to %d", a.config.WNPPort, port)
+
+	// Stop existing server
+	if a.wnpServer != nil {
+		a.wnpServer.Stop()
+		a.wnpServer = nil
+	}
+
+	// Update config
+	a.config.WNPPort = port
+	a.config.Save()
+
+	// Start new server
+	var err error
+	a.wnpServer, err = media.NewWebNowPlayingServer(port, a.onPlayerUpdate)
+	if err != nil {
+		log.Printf("Failed to start WebNowPlaying server on port %d: %v", port, err)
+
+		// Emit error event
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "wnp:port_error", map[string]interface{}{
+				"port":    port,
+				"message": "Не удалось запустить сервер на этом порту. Возможно, порт занят.",
+			})
+		}
+		return err
+	}
+
+	log.Printf("WebNowPlaying server restarted on port %d", port)
+
+	// Emit success event
+	if a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "wnp:port_changed", port)
+	}
+
+	return nil
 }

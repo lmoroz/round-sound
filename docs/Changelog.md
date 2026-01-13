@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.2] 2026-01-14 02:10
+
+### Added
+- **Custom Adapter Support**: Configurable WebNowPlaying port for parallel operation with Rainmeter
+- Port configuration in Settings → WebNowPlaying section
+- Graceful handling of busy default port (8974) — opens settings with instructions
+- Auto-scroll to WNP settings when port conflict detected
+- Connection status indicator (server running / not running)
+- Detailed instructions for adding Custom Adapter in browser extension
+- `ChangeWNPPort`, `GetWNPPort`, `IsWNPConnected` Go bindings
+
+### Changed
+- WNP port now saved in config.json and persists across restarts
+- App no longer crashes when default port is occupied by Rainmeter
+
 ## [0.3.1] 2026-01-14 01:50
 
 - **Interactive progress bar thumb**: Added draggable thumb button that appears on hover
