@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.3] 2026-01-15 00:32
+
+### Fixed
+
+- Audio rays now always react to system audio (WASAPI loopback) regardless of media player state
+
 ## [0.3.3] 2026-01-14 03:05
 
 ### Added

@@ -58,8 +58,8 @@ function draw() {
     const levelIndex = Math.floor((i / rayCount) * currentLevels.length)
     const level = currentLevels[levelIndex] || 0
 
-    // Calculate ray length based on level
-    const rayLength = props.isPlaying ? level * maxRayLength : maxRayLength * 0.1
+    // Calculate ray length based on level (always react to system audio)
+    const rayLength = Math.max(level * maxRayLength, maxRayLength * 0.05)
 
     // Start and end points
     const startX = centerX + Math.cos(angle) * innerRadius
