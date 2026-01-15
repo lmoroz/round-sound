@@ -1,6 +1,6 @@
 # Round Sound Widget — AI Assistant Guide
 
-**Версия проекта**: 0.3.4 (на 2026-01-15)
+**Версия проекта**: 0.3.5 (на 2026-01-16)
 **Цель проекта**: Круговой музыкальный виджет для Windows с визуализацией аудио-уровней в реальном времени
 
 ---
@@ -93,6 +93,7 @@ frontend/
 ### Reference Projects (НЕ РЕДАКТИРОВАТЬ!)
 
 - **`WebNowPlaying/`** — исходники браузерного плагина WebNowPlaying (git submodule/reference)
+- **`WebNowPlaying-Rainmeter/`** — исходники плагина WebNowPlaying для Rainmeter (git submodule/reference)
 - **`AudioLevel/`** — reference/example для WASAPI audio capture
 
 ---
@@ -295,6 +296,7 @@ npm run lint:fix     # Auto-fix
 ## 📚 РЕФЕРЕНС-ПРОЕКТЫ (Read-Only)
 
 - **`./WebNowPlaying`** — исходники браузерного плагина (protocol reference)
+- **`./WebNowPlaying-Rainmeter`** — исходники плагина для Rainmeter (protocol reference)
 - **`./AudioLevel`** — пример WASAPI loopback capture (Go reference)
 
 ❌ **НЕ РЕДАКТИРУЙ ЭТИ ПАПКИ** — они в `.gitignore` и используются только для справки!

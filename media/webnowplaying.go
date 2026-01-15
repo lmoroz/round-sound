@@ -336,6 +336,56 @@ func applyPlayerData(player *Player, data map[string]string) {
 	}
 }
 
+// recalculateActivePlayer recalculates the active player based on priority algorithm from libwnp.
+// Priority order:
+// 1. Playing player with volume > 0 and highest activeAt
+// 2. Any playing player (fallback)
+// 3. Non-playing player with highest activeAt (if no playing players)
+// This prevents "flickering" when multiple players are active.
+func (s *WebNowPlayingServer) recalculateActivePlayer() (changed bool, activePlayer *Player) {
+	s.playersMu.Lock()
+	defer s.playersMu.Unlock()
+
+	var newActiveID int = 0
+	var maxActiveAt int64 = 0
+	foundPlaying := false
+
+	for id, player := range s.players {
+		// Skip ghost players with empty title
+		if player.Title == "" {
+			continue
+		}
+
+		// Priority 1: Playing player with volume > 0 and highest activeAt
+		if player.State == StatePlaying && player.Volume > 0 && player.ActiveAt > maxActiveAt {
+			newActiveID = id
+			maxActiveAt = player.ActiveAt
+			foundPlaying = true
+		} else if player.State == StatePlaying && !foundPlaying {
+			// Priority 2: Any playing player (fallback)
+			newActiveID = id
+			maxActiveAt = player.ActiveAt
+		} else if player.State != StatePlaying && player.ActiveAt > maxActiveAt && !foundPlaying {
+			// Priority 3: Non-playing player with highest activeAt (if no playing players)
+			currentActive := s.players[s.activePlayerID]
+			if currentActive == nil || currentActive.State != StatePlaying {
+				newActiveID = id
+				maxActiveAt = player.ActiveAt
+			}
+		}
+	}
+
+	// Check if active player changed
+	changed = newActiveID != s.activePlayerID
+	if changed {
+		s.activePlayerID = newActiveID
+		log.Printf("Active player changed to: %d", newActiveID)
+	}
+
+	activePlayer = s.players[s.activePlayerID]
+	return changed, activePlayer
+}
+
 // handlePlayerAdded handles new player connection
 func (s *WebNowPlayingServer) handlePlayerAdded(playerID int, data string) {
 	parsed := parsePlayerData(data)
@@ -349,11 +399,13 @@ func (s *WebNowPlayingServer) handlePlayerAdded(playerID int, data string) {
 
 	s.playersMu.Lock()
 	s.players[playerID] = player
-	s.activePlayerID = playerID
 	s.playersMu.Unlock()
 
 	log.Printf("Player added: %d (%s) - %s", playerID, player.Name, player.Title)
-	s.notifyUpdate(player)
+
+	// Recalculate active player and notify
+	_, activePlayer := s.recalculateActivePlayer()
+	s.notifyUpdate(activePlayer)
 }
 
 // handlePlayerUpdated handles player state update (partial data)
@@ -372,41 +424,29 @@ func (s *WebNowPlayingServer) handlePlayerUpdated(playerID int, data string) {
 	}
 	player.UpdatedAt = time.Now().UnixMilli()
 	applyPlayerData(player, parsed)
-
-	// Update active player based on activeAt
-	if player.ActiveAt > 0 {
-		s.activePlayerID = playerID
-	}
 	s.playersMu.Unlock()
 
-	s.notifyUpdate(player)
+	// Recalculate active player with priority algorithm
+	changed, activePlayer := s.recalculateActivePlayer()
+
+	// Notify frontend ONLY if:
+	// 1. Active player changed, OR
+	// 2. This update is for the current active player
+	if changed || s.activePlayerID == playerID {
+		s.notifyUpdate(activePlayer)
+	}
 }
 
 // handlePlayerRemoved handles player disconnection
 func (s *WebNowPlayingServer) handlePlayerRemoved(playerID int) {
 	s.playersMu.Lock()
 	delete(s.players, playerID)
-
-	// Find new active player
-	if s.activePlayerID == playerID {
-		s.activePlayerID = 0
-		var maxActiveAt int64
-		for id, p := range s.players {
-			if p.ActiveAt > maxActiveAt {
-				maxActiveAt = p.ActiveAt
-				s.activePlayerID = id
-			}
-		}
-	}
 	s.playersMu.Unlock()
 
 	log.Printf("Player removed: %d", playerID)
 
-	// Notify with current active player or nil
-	s.playersMu.RLock()
-	activePlayer := s.players[s.activePlayerID]
-	s.playersMu.RUnlock()
-
+	// Recalculate active player and notify
+	_, activePlayer := s.recalculateActivePlayer()
 	s.notifyUpdate(activePlayer)
 }
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.5] 2026-01-16 01:47
+
+### Fixed
+
+- **Multi-player flickering bug**: Widget no longer flickers between different media sources (e.g., Yandex Music + YouTube playing simultaneously)
+- Implemented priority-based active player selection algorithm (ported from libwnp/Rainmeter):
+  - Priority 1: Playing player with volume > 0 and highest `activeAt` timestamp
+  - Priority 2: Any playing player (fallback)
+  - Priority 3: Non-playing player with highest `activeAt` (if no playing players)
+- Frontend `media:update` events are now sent only for the current active player, preventing UI oscillation
+
+### Changed
+
+- Refactored `handlePlayerAdded`, `handlePlayerUpdated`, `handlePlayerRemoved` in `media/webnowplaying.go`
+- Added new `recalculateActivePlayer()` method with priority algorithm
+
 ## [0.3.4] 2026-01-15 23:22
 
 ### Added
