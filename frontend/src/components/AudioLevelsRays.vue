@@ -10,7 +10,6 @@ import { generateRayGradient } from '@/utils/colors'
 
 const props = defineProps<{
   levels: number[];
-  isPlaying: boolean;
 }>()
 
 const { colorScheme } = useSettings()
@@ -18,6 +17,7 @@ const { colorScheme } = useSettings()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 let animationId: number | null = null
 let currentLevels: number[] = []
+let currentDpr = 1
 
 const size = 580
 const innerRadius = 160
@@ -27,9 +27,36 @@ const rayCount = 64
 // Smoothing factor for level transitions
 const smoothingFactor = 0.15
 
+function initializeCanvas() {
+  const canvas = canvasRef.value
+  if (!canvas) return
+
+  const dpr = window.devicePixelRatio || 1
+  currentDpr = dpr
+
+  canvas.width = size * dpr
+  canvas.height = size * dpr
+  canvas.style.width = `${size}px`
+  canvas.style.height = `${size}px`
+
+  const ctx = canvas.getContext('2d')
+  if (ctx) ctx.scale(dpr, dpr)
+}
+
+function checkDprChange() {
+  const dpr = window.devicePixelRatio || 1
+  if (dpr !== currentDpr) {
+    console.warn(`[AudioLevelsRays] DPR changed: ${currentDpr} → ${dpr}, reinitializing canvas`)
+    initializeCanvas()
+  }
+}
+
 function draw() {
   const canvas = canvasRef.value
   if (!canvas) return
+
+  // Check for DPR changes (e.g., after display scaling or system recovery)
+  checkDprChange()
 
   const ctx = canvas.getContext('2d')
   if (!ctx) return
@@ -52,6 +79,10 @@ function draw() {
     }
   }
 
+  // Determine if there's any sound (system or player)
+  const soundThreshold = 0.02 // Минимальный порог для определения звука
+  const hasSound = currentLevels.some(level => level > soundThreshold)
+
   // Draw rays
   for (let i = 0; i < rayCount; i++) {
     const angle = (i / rayCount) * Math.PI * 2 - Math.PI / 2
@@ -67,8 +98,8 @@ function draw() {
     const endX = centerX + Math.cos(angle) * (innerRadius + rayLength)
     const endY = centerY + Math.sin(angle) * (innerRadius + rayLength)
 
-    // Create gradient using color scheme from settings
-    const gradient = generateRayGradient(ctx, startX, startY, endX, endY, colorScheme.value, props.isPlaying)
+    // Create gradient - colored when there's any sound (system or player)
+    const gradient = generateRayGradient(ctx, startX, startY, endX, endY, colorScheme.value, hasSound)
 
     // Draw ray
     ctx.beginPath()
@@ -84,19 +115,7 @@ function draw() {
 }
 
 onMounted(() => {
-  // Set canvas size for high DPI displays
-  const canvas = canvasRef.value
-  if (canvas) {
-    const dpr = window.devicePixelRatio || 1
-    canvas.width = size * dpr
-    canvas.height = size * dpr
-    canvas.style.width = `${size}px`
-    canvas.style.height = `${size}px`
-
-    const ctx = canvas.getContext('2d')
-    if (ctx) ctx.scale(dpr, dpr)
-  }
-
+  initializeCanvas()
   draw()
 })
 

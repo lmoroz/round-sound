@@ -34,6 +34,8 @@ export function MediaToggleRepeat():Promise<void>;
 
 export function MediaToggleShuffle():Promise<void>;
 
+export function Quit():Promise<void>;
+
 export function SaveWindowPosition():Promise<void>;
 
 export function SetAutorun(arg1:boolean):Promise<void>;

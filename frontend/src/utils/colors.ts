@@ -141,6 +141,7 @@ export function generateColorScheme(primaryHex: string): ColorScheme {
 
 /**
  * Генерирует градиент для лучей из цветовой схемы
+ * @param hasSound - если true, лучи будут цветными (реагируют на звук)
  */
 export function generateRayGradient(
   ctx: CanvasRenderingContext2D,
@@ -149,11 +150,11 @@ export function generateRayGradient(
   endX: number,
   endY: number,
   colors: ColorScheme,
-  isPlaying: boolean,
+  hasSound: boolean,
 ): CanvasGradient {
   const gradient = ctx.createLinearGradient(startX, startY, endX, endY)
 
-  if (isPlaying) {
+  if (hasSound) {
     const rgb = hexToRgb(colors.primary)
     const rgbAccent = hexToRgb(colors.accent)
     const rgbSecondary = hexToRgb(colors.secondary)

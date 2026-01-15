@@ -3,6 +3,8 @@ package main
 import (
 	"embed"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -14,6 +16,18 @@ import (
 
 //go:embed all:frontend/dist
 var assets embed.FS
+
+// getWebViewDataPath returns the path for WebView2 user data
+func getWebViewDataPath() string {
+	appData := os.Getenv("APPDATA")
+	if appData == "" {
+		appData = "."
+	}
+	// Use the same folder as config (without .exe suffix)
+	dataDir := filepath.Join(appData, "round-sound", "webview")
+	os.MkdirAll(dataDir, 0755)
+	return dataDir
+}
 
 func main() {
 	// Create application instance
@@ -44,7 +58,7 @@ func main() {
 			WindowIsTranslucent:               true,
 			DisableWindowIcon:                 false,
 			DisableFramelessWindowDecorations: true,
-			WebviewUserDataPath:               "",
+			WebviewUserDataPath:               getWebViewDataPath(),
 			ZoomFactor:                        1.0,
 		},
 		OnStartup:  application.Startup,

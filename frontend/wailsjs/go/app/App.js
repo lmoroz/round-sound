@@ -66,6 +66,10 @@ export function MediaToggleShuffle() {
   return window['go']['app']['App']['MediaToggleShuffle']();
 }
 
+export function Quit() {
+  return window['go']['app']['App']['Quit']();
+}
+
 export function SaveWindowPosition() {
   return window['go']['app']['App']['SaveWindowPosition']();
 }

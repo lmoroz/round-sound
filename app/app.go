@@ -500,6 +500,15 @@ func (a *App) ShowWindow() {
 	}
 }
 
+// Quit gracefully exits the application
+func (a *App) Quit() {
+	log.Println("[App] Quit requested from frontend")
+	if a.trayManager != nil {
+		a.trayManager.Remove()
+	}
+	runtime.Quit(a.ctx)
+}
+
 // --- WebNowPlaying Port Management ---
 
 // startWNPServer starts the WNP server on the specified port

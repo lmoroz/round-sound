@@ -3,12 +3,14 @@ import { computed, ref } from 'vue'
 
 import { Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next'
 
+import { useApp } from '@/composables/useApp'
 import { useAudioLevels } from '@/composables/useAudioLevels'
 import { useMediaPlayer } from '@/composables/useMediaPlayer'
 import { StateMode } from '@/types'
 
 import AlbumCover from './AlbumCover.vue'
 import AudioLevelsRays from './AudioLevelsRays.vue'
+import ContextMenu from './ContextMenu.vue'
 import MediaControls from './MediaControls.vue'
 import ProgressRing from './ProgressRing.vue'
 import TrackInfo from './TrackInfo.vue'
@@ -27,6 +29,7 @@ const {
 } = useMediaPlayer()
 
 const { levels } = useAudioLevels(64)
+const { quit } = useApp()
 
 const progress = computed(() => {
   if (!player.value.duration) return 0
@@ -74,18 +77,36 @@ function showVolumeOverlay() {
     isVolumeVisible.value = false
   }, 1500)
 }
+
+// -- Context Menu --
+const showContextMenu = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+
+function handleContextMenu(e: MouseEvent) {
+  e.preventDefault()
+  contextMenuX.value = e.clientX
+  contextMenuY.value = e.clientY
+  showContextMenu.value = true
+}
+
+function closeContextMenu() {
+  showContextMenu.value = false
+}
+
+function handleQuit() {
+  quit()
+}
 </script>
 
 <template>
   <div
     class="widget-container"
+    @contextmenu="handleContextMenu"
     @wheel="handleWheel"
   >
     <!-- Audio visualization rays (outermost layer) -->
-    <AudioLevelsRays
-      :is-playing="isPlaying"
-      :levels="levels"
-    />
+    <AudioLevelsRays :levels="levels" />
 
     <!-- Progress ring -->
     <ProgressRing
@@ -166,6 +187,15 @@ function showVolumeOverlay() {
     >
       <span class="pulse" />
     </div>
+
+    <!-- Context Menu -->
+    <ContextMenu
+      :show="showContextMenu"
+      :x="contextMenuX"
+      :y="contextMenuY"
+      @close="closeContextMenu"
+      @quit="handleQuit"
+    />
   </div>
 </template>
 

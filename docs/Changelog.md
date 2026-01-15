@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.4] 2026-01-15 23:08
+
+### Added
+
+- **Context Menu**: Right-click context menu with "Выход" (Quit) option for graceful app shutdown
+- DPR change detection and auto-recovery for audio rays canvas to prevent visual glitches after system crashes
+- Centralized Wails runtime types in `types/wails.d.ts` for better type safety
+
+### Fixed
+
+- **WebView2 UserData Path**: Fixed creation of `round-sound.exe` folder in AppData by explicitly setting WebView2 data path to `round-sound/webview`
+- Audio rays now display colored gradient when ANY sound is detected (including system sounds), not just when media player is active
+- Canvas rendering issues after DPR changes (e.g., display scaling or driver crashes)
+
+### Changed
+
+- Audio rays color logic: now based on actual sound level threshold (0.02) instead of player state
+- Removed unused `isPlaying` prop from `AudioLevelsRays` component
+
 ## [0.3.3] 2026-01-15 00:32
 
 ### Fixed
