@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.4] 2026-01-15 23:22
+
+### Added
+
+- **AI Assistant Guide**: Created comprehensive `AGENTS.md` with project structure, architecture diagrams, workflows, code style rules, and troubleshooting guide for AI assistants
+
 ## [0.3.4] 2026-01-15 23:08
 
 ### Added
