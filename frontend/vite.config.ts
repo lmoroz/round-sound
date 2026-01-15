@@ -1,8 +1,6 @@
 import vue from '@vitejs/plugin-vue'
 import * as path from 'path'
-import {
-  defineConfig,
-} from 'vite'
+import { defineConfig } from 'vite'
 import checker from 'vite-plugin-checker'
 import eslint from 'vite-plugin-eslint'
 

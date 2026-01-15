@@ -1,20 +1,16 @@
-import js from '@eslint/js'
+import { globalIgnores } from 'eslint/config'
 import stylistic from '@stylistic/eslint-plugin'
-import vueTS from '@vue/eslint-config-typescript'
-import vue from 'eslint-plugin-vue'
-
-const ignores = ['**/node_modules/', '.git/', 'dist/', '.output/', '.vite', 'wailsjs/']
+import {
+  defineConfigWithVueTs,
+  vueTsConfigs,
+} from '@vue/eslint-config-typescript'
+import pluginVue from 'eslint-plugin-vue'
 
 // @ts-check
-export default [
-  js.configs.recommended,
-  ...vue.configs['flat/recommended'],
-  ...vueTS({
-    extends: ['strict'],
-  }),
-  {
-    ignores,
-  },
+export default defineConfigWithVueTs(
+  globalIgnores(['**/node_modules/', '.git/', 'dist/', '.output/', '.vite', 'wailsjs/']),
+  pluginVue.configs['flat/recommended'],
+  vueTsConfigs.recommended,
   {
     files: ['**/*.{js,ts,vue}'],
     plugins: {
@@ -88,4 +84,4 @@ export default [
       'vue/require-default-prop': 0,
     },
   },
-]
+)
