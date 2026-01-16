@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.6] 2026-01-16 06:00
+
+### Added
+
+- **Dynamic Tray Icon**: System tray icon now changes based on sound presence
+  - Gray icon when no sound is detected (default state)
+  - Colored icon (orange/gold) when system audio is active
+  - Sound detection uses same threshold as audio rays (0.02)
+  - Icon updates throttled to 1 update per second to prevent API overload
+  - Provides visual indication of audio activity when widget is hidden behind other windows
+
+### Changed
+
+- Refactored `app/tray.go`: Added two embedded PNG icons (color and gray versions)
+- Added `SetIconState(hasSound bool)` method with throttling logic
+- Modified `onAudioLevels` in `app/app.go` to detect sound and update tray icon state
+
 ## [0.3.5] 2026-01-16 01:47
 
 ### Fixed

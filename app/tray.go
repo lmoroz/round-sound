@@ -5,16 +5,22 @@ import (
 	_ "embed"
 	"log"
 	"os"
+	"time"
 
 	"github.com/getlantern/systray"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-//go:embed tray.ico
-var trayIconData []byte
+//go:embed tray-color.ico
+var trayIconColor []byte
+
+//go:embed tray-gray.ico
+var trayIconGray []byte
 
 type TrayManager struct {
-	ctx context.Context
+	ctx            context.Context
+	hasSound       bool
+	lastUpdateTime time.Time
 }
 
 func NewTrayManager(ctx context.Context) *TrayManager {
@@ -36,9 +42,10 @@ func (t *TrayManager) Remove() {
 }
 
 func (t *TrayManager) onReady() {
-	// Set icon
-	systray.SetIcon(trayIconData)
+	// Set icon (gray by default - no sound)
+	systray.SetIcon(trayIconGray)
 	systray.SetTooltip("Round Sound Widget")
+	t.hasSound = false
 
 	// Add menu items - только выход
 	mQuit := systray.AddMenuItem("Выход", "Закрыть приложение")
@@ -71,4 +78,26 @@ func (t *TrayManager) HideWindow() {
 
 func (t *TrayManager) ToggleWindow() {
 	t.ShowWindow()
+}
+
+// SetIconState updates the tray icon based on sound presence (throttled)
+func (t *TrayManager) SetIconState(hasSound bool) {
+	// Throttle updates - no more than twice per second (500ms)
+	now := time.Now()
+	if now.Sub(t.lastUpdateTime) < 500*time.Millisecond {
+		return
+	}
+
+	if t.hasSound == hasSound {
+		return // No change needed
+	}
+
+	t.hasSound = hasSound
+	t.lastUpdateTime = now
+
+	if hasSound {
+		systray.SetIcon(trayIconColor)
+	} else {
+		systray.SetIcon(trayIconGray)
+	}
 }

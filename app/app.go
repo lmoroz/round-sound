@@ -135,6 +135,21 @@ func (a *App) onAudioLevels(levels []float32) {
 	if a.ctx != nil {
 		runtime.EventsEmit(a.ctx, "audio:levels", levels)
 	}
+
+	// Determine if there's sound (threshold from AudioLevelsRays.vue)
+	const soundThreshold = 0.02
+	hasSound := false
+	for _, level := range levels {
+		if level > soundThreshold {
+			hasSound = true
+			break
+		}
+	}
+
+	// Update tray icon state
+	if a.trayManager != nil {
+		a.trayManager.SetIconState(hasSound)
+	}
 }
 
 // onAudioConfigUpdate is called when frontend sends audio configuration changes

@@ -17,6 +17,7 @@ A circular music widget for Windows with real-time audio level visualization.
 - 🎨 Customizable color scheme
 - ⚙️ Settings with dynamic FFT parameters
 - 🔔 System tray integration (minimize to tray instead of closing)
+- 🎨 Dynamic tray icon (gray when silent, colored when audio is playing)
 - 🚀 Auto-start on Windows startup
 
 ## Technologies
