@@ -21,6 +21,8 @@ const props = defineProps<{
   repeat: RepeatMode;
   rating: number;
   canSetRating: boolean;
+  canSetShuffle: boolean;
+  canSetRepeat: boolean;
 }>()
 
 const emit = defineEmits<{
@@ -84,6 +86,7 @@ function handleDislike() {
     <!-- Main Controls Row -->
     <div class="main-controls">
       <button
+        v-if="canSetShuffle"
         class="control-button"
         :class="{ active: shuffle }"
         title="Shuffle"
@@ -124,6 +127,7 @@ function handleDislike() {
       </button>
 
       <button
+        v-if="canSetRepeat"
         class="control-button"
         :class="{ active: isRepeatActive }"
         title="Repeat"

@@ -110,6 +110,7 @@ function handleQuit() {
 
     <!-- Progress ring -->
     <ProgressRing
+      :can-seek="player.canSetPosition"
       :duration="player.duration"
       :progress="progress"
       @seek="seek"
@@ -153,6 +154,8 @@ function handleQuit() {
             <!-- Media controls -->
             <MediaControls
               :can-set-rating="player.canSetRating"
+              :can-set-repeat="player.canSetRepeat"
+              :can-set-shuffle="player.canSetShuffle"
               :is-playing="isPlaying"
               :rating="player.rating"
               :repeat="player.repeat"

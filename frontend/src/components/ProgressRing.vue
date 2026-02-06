@@ -7,6 +7,7 @@ import {
 const props = defineProps<{
   progress: number; // 0 to 1
   duration: number; // seconds
+  canSeek: boolean;
 }>()
 
 const emit = defineEmits<{
@@ -78,6 +79,7 @@ function getProgressFromClientPosition(clientX: number, clientY: number): number
 }
 
 function onMouseDown(event: MouseEvent | TouchEvent) {
+  if (!props.canSeek) return
   event.preventDefault()
   isDragging.value = true
 
@@ -113,7 +115,7 @@ function onMouseDown(event: MouseEvent | TouchEvent) {
 }
 
 function onTrackClick(event: MouseEvent) {
-  if (isDragging.value) return
+  if (!props.canSeek || isDragging.value) return
   const progress = getProgressFromClientPosition(event.clientX, event.clientY)
   const seekPosition = progress * props.duration
   emit('seek', seekPosition)
@@ -124,11 +126,11 @@ function onTrackClick(event: MouseEvent) {
   <svg
     ref="svgRef"
     class="progress-ring"
-    :class="{ 'is-interactive': isHovered || isDragging }"
+    :class="{ 'is-interactive': canSeek && (isHovered || isDragging), 'is-seekable': canSeek }"
     :height="viewBoxSize"
     :viewBox="`0 0 ${viewBoxSize} ${viewBoxSize}`"
     :width="viewBoxSize"
-    @mouseenter="isHovered = true"
+    @mouseenter="isHovered = canSeek"
     @mouseleave="isHovered = false"
   >
     <!-- Invisible wider track for easier clicking/hovering -->
@@ -169,6 +171,7 @@ function onTrackClick(event: MouseEvent) {
 
     <!-- Thumb button -->
     <g
+      v-if="canSeek"
       class="progress-thumb-group"
       :class="{ 'is-visible': isHovered || isDragging }"
     >
@@ -207,6 +210,10 @@ function onTrackClick(event: MouseEvent) {
   margin: -20px;
   /* Prevent window dragging when interacting with progress */
   --wails-draggable: no-drag;
+}
+
+.progress-ring:not(.is-seekable) {
+  cursor: default;
 }
 
 .progress-ring.is-interactive {
