@@ -1,6 +1,7 @@
 package media
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -14,6 +15,20 @@ import (
 const (
 	BandCount   = 64
 	RefreshRate = 60
+
+	// AUDCLNT_E_DEVICE_INVALIDATED full HRESULT: severity(0x8) + facility AUDCLNT(0x889) + code(0x004).
+	hrAudClntDeviceInvalidated uintptr = 0x88890004
+
+	// reinitBackoffTicks throttles WASAPI re-initialization attempts to ~500ms when the
+	// session is down, so we don't hammer COM at the full 60Hz refresh rate.
+	reinitBackoffTicks = RefreshRate / 2
+
+	// defaultDeviceCheckInterval polls the current default render endpoint every
+	// ~166ms to detect Windows "default output" switches. WASAPI does NOT signal
+	// AUDCLNT_E_DEVICE_INVALIDATED in that scenario when the old device is still
+	// physically connected — the loopback session just goes silent. Polling the
+	// default endpoint ID is the only reliable way to react.
+	defaultDeviceCheckInterval = 10
 )
 
 type AudioLevelCapture struct {
@@ -24,6 +39,125 @@ type AudioLevelCapture struct {
 	config      FFTConfig
 	buffer      []float32
 	bufferSize  int
+}
+
+// wasapiSession bundles the WASAPI stack needed for one loopback capture.
+// Tied to a single render endpoint — when the user changes Windows default output,
+// the whole session must be released and reopened.
+//
+// The device enumerator (mmde) is intentionally kept outside this struct: it has
+// a longer lifecycle than a single capture session and is reused across re-inits
+// to poll the current default endpoint ID.
+type wasapiSession struct {
+	mmd           *wca.IMMDevice
+	audioClient   *wca.IAudioClient
+	captureClient *wca.IAudioCaptureClient
+	pwfx          *wca.WAVEFORMATEX
+	sampleRate    uint32
+	deviceID      string
+}
+
+func (s *wasapiSession) release() {
+	if s == nil {
+		return
+	}
+	if s.captureClient != nil {
+		s.captureClient.Release()
+		s.captureClient = nil
+	}
+	if s.audioClient != nil {
+		s.audioClient.Stop()
+		s.audioClient.Release()
+		s.audioClient = nil
+	}
+	if s.mmd != nil {
+		s.mmd.Release()
+		s.mmd = nil
+	}
+	if s.pwfx != nil {
+		ole.CoTaskMemFree(uintptr(unsafe.Pointer(s.pwfx)))
+		s.pwfx = nil
+	}
+}
+
+func openWASAPISession(mmde *wca.IMMDeviceEnumerator) (*wasapiSession, error) {
+	s := &wasapiSession{}
+
+	if err := mmde.GetDefaultAudioEndpoint(wca.ERender, wca.EConsole, &s.mmd); err != nil {
+		s.release()
+		return nil, fmt.Errorf("get default endpoint: %w", err)
+	}
+
+	if err := s.mmd.GetId(&s.deviceID); err != nil {
+		s.release()
+		return nil, fmt.Errorf("get device id: %w", err)
+	}
+
+	if err := s.mmd.Activate(wca.IID_IAudioClient, wca.CLSCTX_ALL, nil, &s.audioClient); err != nil {
+		s.release()
+		return nil, fmt.Errorf("activate audio client: %w", err)
+	}
+
+	if err := s.audioClient.GetMixFormat(&s.pwfx); err != nil {
+		s.release()
+		return nil, fmt.Errorf("get mix format: %w", err)
+	}
+
+	s.sampleRate = s.pwfx.NSamplesPerSec
+
+	hnsRequestedDuration := wca.REFERENCE_TIME(10000000)
+	if err := s.audioClient.Initialize(
+		wca.AUDCLNT_SHAREMODE_SHARED,
+		wca.AUDCLNT_STREAMFLAGS_LOOPBACK,
+		hnsRequestedDuration,
+		0,
+		s.pwfx,
+		nil,
+	); err != nil {
+		s.release()
+		return nil, fmt.Errorf("initialize audio client (LOOPBACK): %w", err)
+	}
+
+	if err := s.audioClient.GetService(wca.IID_IAudioCaptureClient, &s.captureClient); err != nil {
+		s.release()
+		return nil, fmt.Errorf("get capture client: %w", err)
+	}
+
+	if err := s.audioClient.Start(); err != nil {
+		s.release()
+		return nil, fmt.Errorf("start audio client: %w", err)
+	}
+
+	log.Printf("[AudioLevels] WASAPI loopback opened: deviceID=%s, sampleRate=%d Hz, channels=%d, bitsPerSample=%d",
+		s.deviceID, s.sampleRate, s.pwfx.NChannels, s.pwfx.WBitsPerSample)
+
+	return s, nil
+}
+
+// currentDefaultDeviceID returns the ID of the current default render endpoint,
+// without keeping any references — caller decides whether to act on it.
+func currentDefaultDeviceID(mmde *wca.IMMDeviceEnumerator) (string, error) {
+	var dev *wca.IMMDevice
+	if err := mmde.GetDefaultAudioEndpoint(wca.ERender, wca.EConsole, &dev); err != nil {
+		return "", err
+	}
+	defer dev.Release()
+
+	var id string
+	if err := dev.GetId(&id); err != nil {
+		return "", err
+	}
+	return id, nil
+}
+
+// isDeviceInvalidated reports whether err signals that the bound audio endpoint
+// is gone (device unplugged, default output switched in Windows, etc).
+func isDeviceInvalidated(err error) bool {
+	var oerr *ole.OleError
+	if errors.As(err, &oerr) {
+		return oerr.Code() == hrAudClntDeviceInvalidated
+	}
+	return false
 }
 
 func NewAudioLevelCapture(callback func([]float32)) *AudioLevelCapture {
@@ -86,99 +220,81 @@ func (a *AudioLevelCapture) captureLoop() {
 	defer ticker.Stop()
 
 	var mmde *wca.IMMDeviceEnumerator
-	var mmd *wca.IMMDevice
-	var audioClient *wca.IAudioClient
-	var captureClient *wca.IAudioCaptureClient
-	var pwfx *wca.WAVEFORMATEX
-	var sampleRate uint32
-
-	defer func() {
-		if captureClient != nil {
-			captureClient.Release()
-		}
-		if audioClient != nil {
-			audioClient.Stop()
-			audioClient.Release()
-		}
-		if mmd != nil {
-			mmd.Release()
-		}
-		if mmde != nil {
-			mmde.Release()
-		}
-		if pwfx != nil {
-			ole.CoTaskMemFree(uintptr(unsafe.Pointer(pwfx)))
-		}
-	}()
-
 	if err := wca.CoCreateInstance(wca.CLSID_MMDeviceEnumerator, 0, wca.CLSCTX_ALL, wca.IID_IMMDeviceEnumerator, &mmde); err != nil {
 		log.Printf("[AudioLevels] Failed to create device enumerator: %v", err)
 		return
 	}
+	defer mmde.Release()
 
-	if err := mmde.GetDefaultAudioEndpoint(wca.ERender, wca.EConsole, &mmd); err != nil {
-		log.Printf("[AudioLevels] Failed to get default endpoint: %v", err)
-		return
+	var session *wasapiSession
+	defer func() { session.release() }()
+
+	session, err := openWASAPISession(mmde)
+	if err != nil {
+		log.Printf("[AudioLevels] Initial WASAPI open failed: %v", err)
 	}
 
-	if err := mmd.Activate(wca.IID_IAudioClient, wca.CLSCTX_ALL, nil, &audioClient); err != nil {
-		log.Printf("[AudioLevels] Failed to activate audio client: %v", err)
-		return
-	}
-
-	if err := audioClient.GetMixFormat(&pwfx); err != nil {
-		log.Printf("[AudioLevels] Failed to get mix format: %v", err)
-		return
-	}
-
-	sampleRate = pwfx.NSamplesPerSec
-	log.Printf("[AudioLevels] Sample rate: %d Hz, Channels: %d, BitsPerSample: %d",
-		sampleRate, pwfx.NChannels, pwfx.WBitsPerSample)
-
-	hnsRequestedDuration := wca.REFERENCE_TIME(10000000)
-	if err := audioClient.Initialize(
-		wca.AUDCLNT_SHAREMODE_SHARED,
-		wca.AUDCLNT_STREAMFLAGS_LOOPBACK,
-		hnsRequestedDuration,
-		0,
-		pwfx,
-		nil,
-	); err != nil {
-		log.Printf("[AudioLevels] Failed to initialize audio client with LOOPBACK: %v", err)
-		return
-	}
-
-	if err := audioClient.GetService(wca.IID_IAudioCaptureClient, &captureClient); err != nil {
-		log.Printf("[AudioLevels] Failed to get capture client: %v", err)
-		return
-	}
-
-	if err := audioClient.Start(); err != nil {
-		log.Printf("[AudioLevels] Failed to start audio client: %v", err)
-		return
-	}
-
-	log.Println("[AudioLevels] WASAPI Loopback started successfully")
+	ticksSinceReinitAttempt := 0
+	ticksSinceDeviceCheck := 0
 
 	for {
 		select {
 		case <-a.stopChan:
 			return
 		case <-ticker.C:
-			a.processAudioFrame(captureClient, pwfx, sampleRate)
+			if session == nil {
+				ticksSinceReinitAttempt++
+				if ticksSinceReinitAttempt >= reinitBackoffTicks {
+					ticksSinceReinitAttempt = 0
+					if s, err := openWASAPISession(mmde); err == nil {
+						session = s
+						a.buffer = a.buffer[:0]
+						log.Println("[AudioLevels] WASAPI session re-opened")
+					} else {
+						log.Printf("[AudioLevels] Reinit attempt failed: %v", err)
+					}
+				}
+				a.sendSilence()
+				continue
+			}
+
+			ticksSinceDeviceCheck++
+			if ticksSinceDeviceCheck >= defaultDeviceCheckInterval {
+				ticksSinceDeviceCheck = 0
+				if currentID, err := currentDefaultDeviceID(mmde); err == nil && currentID != session.deviceID {
+					log.Printf("[AudioLevels] Default render endpoint changed (%s -> %s) — reopening WASAPI session", session.deviceID, currentID)
+					session.release()
+					session = nil
+					ticksSinceReinitAttempt = 0
+					a.sendSilence()
+					continue
+				}
+			}
+
+			if err := a.processAudioFrame(session); err != nil {
+				if isDeviceInvalidated(err) {
+					log.Println("[AudioLevels] Audio endpoint invalidated — reopening WASAPI session")
+				} else {
+					log.Printf("[AudioLevels] Capture error, reopening session: %v", err)
+				}
+				session.release()
+				session = nil
+				ticksSinceReinitAttempt = 0
+				a.sendSilence()
+			}
 		}
 	}
 }
 
-func (a *AudioLevelCapture) processAudioFrame(captureClient *wca.IAudioCaptureClient, pwfx *wca.WAVEFORMATEX, sampleRate uint32) {
+func (a *AudioLevelCapture) processAudioFrame(s *wasapiSession) error {
 	var packetLength uint32
-	if err := captureClient.GetNextPacketSize(&packetLength); err != nil {
-		return
+	if err := s.captureClient.GetNextPacketSize(&packetLength); err != nil {
+		return err
 	}
 
 	if packetLength == 0 {
 		a.sendSilence()
-		return
+		return nil
 	}
 
 	var pData *byte
@@ -186,23 +302,28 @@ func (a *AudioLevelCapture) processAudioFrame(captureClient *wca.IAudioCaptureCl
 	var flags uint32
 
 	for packetLength > 0 {
-		if err := captureClient.GetBuffer(&pData, &numFrames, &flags, nil, nil); err != nil {
-			return
+		if err := s.captureClient.GetBuffer(&pData, &numFrames, &flags, nil, nil); err != nil {
+			return err
 		}
 
 		if flags&wca.AUDCLNT_BUFFERFLAGS_SILENT != 0 || numFrames == 0 {
-			captureClient.ReleaseBuffer(numFrames)
+			if err := s.captureClient.ReleaseBuffer(numFrames); err != nil {
+				return err
+			}
 			a.sendSilence()
 		} else {
-			samples := a.extractSamples(pData, numFrames, pwfx)
-			captureClient.ReleaseBuffer(numFrames)
-			a.sendFFTLevels(samples, sampleRate)
+			samples := a.extractSamples(pData, numFrames, s.pwfx)
+			if err := s.captureClient.ReleaseBuffer(numFrames); err != nil {
+				return err
+			}
+			a.sendFFTLevels(samples, s.sampleRate)
 		}
 
-		if err := captureClient.GetNextPacketSize(&packetLength); err != nil {
-			break
+		if err := s.captureClient.GetNextPacketSize(&packetLength); err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
 func (a *AudioLevelCapture) extractSamples(pData *byte, numFrames uint32, pwfx *wca.WAVEFORMATEX) []float32 {

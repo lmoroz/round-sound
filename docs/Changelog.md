@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.7] 2026-04-28 17:00
+
+### Fixed
+
+- **Audio rays freeze after switching default output device**: Changing the Windows default render endpoint (e.g. soundbar → headphones) no longer leaves the FFT visualization stuck on silence. The WASAPI loopback session is bound to a single endpoint, and Windows does not signal `AUDCLNT_E_DEVICE_INVALIDATED` when the old device is still physically connected — the loopback simply went silent.
+- The capture loop now polls the current default render endpoint ID every ~166ms and rebuilds the WASAPI session whenever it changes. `AUDCLNT_E_DEVICE_INVALIDATED` is still handled as a safety net for physical unplug.
+- `processAudioFrame` no longer swallows WASAPI errors silently — they are logged and trigger session reopen.
+
+### Changed
+
+- Refactored `media/audiolevels.go`: extracted `wasapiSession` struct with `release()` and `openWASAPISession()`; the `IMMDeviceEnumerator` is now reused across re-inits.
+- Removed unused `playerID` parameter from `WebNowPlayingServer.handleEventResult` in `media/webnowplaying.go`.
+
 ## [0.3.6] 2026-01-16 06:00
 
 ### Added

@@ -165,7 +165,7 @@ func (s *WebNowPlayingServer) handleTextMessage(msg string) {
 	// EVENT_RESULT has different format: 3 <eventId> <statusCode>
 	// Other messages: <msgType> <playerId> <data>
 	if MessageType(msgType) == MessageEventResult {
-		s.handleEventResult(0, parts)
+		s.handleEventResult(parts)
 		return
 	}
 
@@ -451,7 +451,7 @@ func (s *WebNowPlayingServer) handlePlayerRemoved(playerID int) {
 }
 
 // handleEventResult handles command execution results from WebNowPlaying
-func (s *WebNowPlayingServer) handleEventResult(playerID int, parts []string) {
+func (s *WebNowPlayingServer) handleEventResult(parts []string) {
 	// Format: 3 <eventId> <statusCode>
 	// parts[0] = "3" (message type)
 	// parts[1] = eventId
